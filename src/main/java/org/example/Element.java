@@ -1,11 +1,23 @@
 package org.example;
 
 public class Element {
-    private long key;
+    private final int key;
     private long offset;
 
-    public Element(long key, long offset) {
+    public Element(int key, long offset) {
         this.key = key;
+        this.offset = offset;
+    }
+
+    public int getKey() {
+        return key;
+    }
+
+    public long getOffset() {
+        return offset;
+    }
+
+    public void setOffset(long offset) {
         this.offset = offset;
     }
 }
