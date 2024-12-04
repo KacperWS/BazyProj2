@@ -44,43 +44,21 @@ public class BTree {
     }
 
     public void insert(int key, long offset) {
+        path.add(root);
         search(key, root);
         if(current == null)
             return;
         if(current.getValues().size() < 2 * treeCapacity){
-            insert2(current);
-        }
-        else if (current == root){
-            Node temp = root;
-            Node newRoot = new Node(treeCapacity);
-            root = newRoot;
-            newRoot.getChildren().add(temp);
-            split(key, offset);
-            //insert2(newRoot);
-        }else {
-            /*if(compensate())
-                return;
-            else
-                split();*/
-            //insert2(root);
-        }
-
-        /*Node temp = root;
-        if(root.getValues().size() ==  2 * treeCapacity){
-
-            Node newRoot = new Node(treeCapacity);
-            root = newRoot;
-            newRoot.getChildren().add(temp);
-            split();
-            insert2(newRoot);
-            //tree.set(0, newRoot);
-            //newRoot.getValues().add();
-            //int place = findPlace(root, key);
-            //root.getValues().add(new Element(key, offset));
+            Element newElement = new Element(key, offset);
+            current.getValues().add(newElement);
+            current.getValues().sort(Comparator.comparingInt(Element::getKey));
+            //insert2(current);
         }
         else {
-            insert2(root);
-        }*/
+            if(!compensate(key, offset))
+                split(key, offset);
+        }
+        path.clear();
     }
 
     private void insert2(Node node) {
@@ -108,33 +86,42 @@ public class BTree {
     }
 
     public Element search(int key, Node s) {
-        //Node s = root;
-        path.add(root);
-        if(s.getValues().isEmpty()) {
-            current = root;
+        // Start from the root node
+
+        // Base case: If the node is empty, return null
+        if (s.getValues().isEmpty()) {
             return null;
         }
-        else {
-            int x = find(key, s);
-            if(s.getValues().get(x).getKey() == key) {
-                current = null;
+
+        // Find the index of the key in the current node
+        int x = find(key, s);
+
+        // If the key is found in the current node, return it
+        if(x < (s.getValues().size())) {
+            if (s.getValues().get(x).getKey() == key) {
+                current = null;  // Reset current node, if necessary
                 return s.getValues().get(x);
             }
-            else {
-                if(s.getPointers().isEmpty()) {
-                    path.add(s);
-                    current = s;
-                }
-                else {
-                    path.add(s);
-                    search(key, s.getChildren().get(x));
-                }
-            }
         }
+
+        // If the key is not found and we have children, we need to search the correct child node
+        if (!s.getChildren().isEmpty()) {
+            // Add current node to path
+            Node childNode = s.getChildren().get(x);
+            path.add(childNode);
+            current = childNode;// Get the child node based on the index
+            return search(key, childNode); // Recursively search in the child node
+        }
+
+        // If we reached a leaf node and the key is not found, return null
         return null;
     }
 
-    public boolean compensate(int key, long offset) { //Only possible in leaf
+
+    public boolean compensate(int key, long offset) {
+        if(current == root)
+            return false;
+        //Only possible in leaf
         Node parent = path.get(path.indexOf(current) - 1);
         List<Node> children = parent.getChildren();
         if (children.size() < 2)
@@ -155,16 +142,12 @@ public class BTree {
             Element middle = temp.get(middleValue); //choose middle
 
             parent.getValues().set(index - 1, middle); // set parent to middle
-            current.getValues().clear();
-            List<Element> tempList = current.getValues(); //redistribute equally
-            for(int i = 0; i < middleValue; i++){
-                tempList.add(temp.get(i));
-            }
-            siblingRight.getValues().clear();
-            tempList = siblingRight.getValues();
-            for(int i = middleValue + 1; i < temp.size(); i++){
-                tempList.add(temp.get(i));
-            }
+            //redistribute equally
+
+            current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
+
+            siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
             return true;
         }
         else {
@@ -181,16 +164,11 @@ public class BTree {
                 Element middle = temp.get(middleValue); //choose middle
 
                 parent.getValues().set(index - 1, middle); // set parent to middle
-                current.getValues().clear();
-                List<Element> tempList = current.getValues(); //redistribute equally
-                for(int i = 0; i < middleValue; i++){
-                    tempList.add(temp.get(i));
-                }
-                siblingLeft.getValues().clear();
-                tempList = siblingLeft.getValues();
-                for(int i = middleValue + 1; i < temp.size(); i++){
-                    tempList.add(temp.get(i));
-                }
+
+                siblingLeft.setValues(new ArrayList<>(temp.subList(0, middleValue)));
+
+                current.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
                 return true;
             }
 
@@ -215,72 +193,79 @@ public class BTree {
             Element middle = temp.get(middleValue); //choose middle
 
             parent.getValues().set(index - 1, middle); // set parent to middle
-            current.getValues().clear();
-            List<Element> tempList = current.getValues(); //redistribute equally
-            for(int i = 0; i < middleValue; i++){
-                tempList.add(temp.get(i));
-            }
-            siblingRight.getValues().clear();
-            tempList = siblingRight.getValues();
-            for(int i = middleValue + 1; i < temp.size(); i++){
-                tempList.add(temp.get(i));
-            }
+
+            current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
+
+            siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
             return true;
         }
-        //Node sibling = temp.getChildren().get(temp.getChildren().indexOf(current));
-        //return false;
     }
 
     public void split(int key, long offset) {
-        Node parent = path.get(path.indexOf(current) - 1);
-        List<Node> children = parent.getChildren();
-        Node newNode = new Node(treeCapacity);
+        if(path.size() > 1) {
+            Node parent = path.get(path.indexOf(current) - 1);
+            List<Node> children = parent.getChildren();
+            Node newNode = new Node(treeCapacity);
 
-        if(current.getPointers().isEmpty()) { //Code below to add to leaf
-            Element newOne = new Element(key, offset);
+            if (current.getChildren().isEmpty()) { //Code below to add to leaf
+                Element newOne = new Element(key, offset);
 
-            current.getValues().add(newOne);
-            current.getValues().sort(Comparator.comparingInt(Element::getKey));
+                current.getValues().add(newOne);
+                current.getValues().sort(Comparator.comparingInt(Element::getKey));
 
-            int middleValue = (int) Math.round(current.getValues().size() / 2.0 - 1);
-            List<Element> tempList; //redistribute equally
+                int middleValue = (int) Math.round(current.getValues().size() / 2.0 - 1);
+                List<Element> tempList; //redistribute equally
 
-            List<Element> temp = current.getValues();
-            tempList = new ArrayList<>(temp.subList(middleValue + 1, temp.size()));
-            newNode.setValues(tempList);
-            List<Element> tempList1;
-            tempList1 = new ArrayList<>(temp.subList(0, middleValue - 1));
-            Element middle = temp.get(middleValue);
-            temp.clear();
-            temp.addAll(tempList1);
+                List<Element> temp = current.getValues();
+                tempList = new ArrayList<>(temp.subList(middleValue + 1, temp.size()));
+                newNode.setValues(tempList);
+                List<Element> tempList1;
+                tempList1 = new ArrayList<>(temp.subList(0, middleValue));
+                Element middle = temp.get(middleValue);
+                temp.clear();
+                temp.addAll(tempList1);
 
-            int index = children.indexOf(current);
-            parent.getChildren().add(index + 1, newNode);
-            parent.getValues().add(index, middle);
+                int index = children.indexOf(current);
+                parent.getChildren().add(index + 1, newNode);
+                parent.getValues().add(index, middle);
+            } else if (current.getValues().size() > treeCapacity * 2) { //Works on root and other
+                int middleValue = (int) Math.round(current.getValues().size() / 2.0 - 1);
+                List<Element> tempList; //redistribute equally
+
+                List<Element> temp = current.getValues();
+                tempList = new ArrayList<>(temp.subList(middleValue + 1, temp.size()));
+                newNode.setValues(tempList);
+                List<Element> tempList1;
+                tempList1 = new ArrayList<>(temp.subList(0, middleValue));
+                Element middle = temp.get(middleValue);
+                temp.clear();
+                temp.addAll(tempList1);
+
+                int index = children.indexOf(current);
+                parent.getChildren().add(index + 1, newNode);
+                parent.getValues().add(index, middle);
+
+                //newNode.setPointers(new ArrayList<>(current.getPointers().subList(middleValue + 1, current.getPointers().size())));
+                newNode.setChildren(new ArrayList<>(current.getChildren().subList(middleValue + 1, current.getChildren().size())));
+
+                //current.setPointers(new ArrayList<>(current.getPointers().subList(0, middleValue)));
+                current.setChildren(new ArrayList<>(current.getChildren().subList(0, middleValue + 1)));
+
+            }
+            path.remove(current);
+            current = parent;
+            split(key, offset);
         }
         else {
-            int middleValue = (int) Math.round(current.getValues().size() / 2.0 - 1);
-            List<Element> tempList; //redistribute equally
-
-            List<Element> temp = current.getValues();
-            tempList = new ArrayList<>(temp.subList(middleValue + 1, temp.size()));
-            newNode.setValues(tempList);
-            List<Element> tempList1;
-            tempList1 = new ArrayList<>(temp.subList(0, middleValue - 1));
-            Element middle = temp.get(middleValue);
-            temp.clear();
-            temp.addAll(tempList1);
-
-            int index = children.indexOf(current);
-            parent.getChildren().add(index + 1, newNode);
-            parent.getValues().add(index, middle);
-
-            newNode.setPointers(new ArrayList<>(current.getPointers().subList(middleValue + 1, current.getPointers().size())));
-            newNode.setChildren(new ArrayList<>(current.getChildren().subList(middleValue + 1, current.getChildren().size())));
-
-            current.setPointers(new ArrayList<>(current.getPointers().subList(0, middleValue)));
-            current.setChildren(new ArrayList<>(current.getChildren().subList(0, middleValue)));
-
+            if(current.getValues().size() > treeCapacity * 2 || current.getChildren().isEmpty()){ //root too full or just created
+                Node temp = root;
+                Node newRoot = new Node(treeCapacity);
+                root = newRoot;
+                newRoot.getChildren().add(temp);
+                path.addFirst(root);
+                split(key, offset);
+            }
         }
     }
 
