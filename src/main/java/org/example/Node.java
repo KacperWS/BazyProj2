@@ -35,6 +35,10 @@ public class Node {
         this.values = values;
     }
 
+    public void setChildren(List<Node> children) {
+        this.children = children;
+    }
+
     public void set(List<Element> values, List<Long> pointers) {
         this.pointers = pointers;
         this.values = values;
