@@ -1,6 +1,7 @@
 package org.example;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class BTree {
@@ -133,16 +134,52 @@ public class BTree {
         return null;
     }
 
-    public boolean compensate() {
+    public boolean compensate(int key, long offset) { //Only possible in leaf
         Node parent = path.get(path.indexOf(current) - 1);
         List<Node> children = parent.getChildren();
         if (children.size() < 2)
-            return false; //No sibling to compensate
+            return false; //No siblings to compensate
 
         int index = children.indexOf(current);
-        Node sibling;
-        if(index < 1){
-            if(children.)
+        if(index < 1){ //Right sibling should exist
+            if(children.get(1).getValues().size() == treeCapacity * 2)
+                return false; //sibling is full
+        }
+        else {
+            Node siblingLeft = children.get(index - 1);
+            if(!(siblingLeft.getValues().size() == treeCapacity * 2)) {
+                //sibling has space
+                Element newOne = new Element(key, offset);
+                List<Element> temp = siblingLeft.getValues();
+                temp.add(parent.getValues().get(index - 1));
+                temp.addAll(children.get(index).getValues());
+                temp.add(newOne); //create temo list with all
+                temp.sort(Comparator.comparingInt(Element::getKey));
+                int middleValue = (int) Math.round(temp.size()/2.0);
+                Element middle = temp.get(middleValue); //choose middle
+
+                parent.getValues().set(index - 1, middle); // set parent to middle
+                current.getValues().clear(); //redistribute equally
+                for(int i = 0; i < middleValue; i++){
+
+                }
+
+                for(int i = middleValue; i < temp.size(); i++){
+
+                }
+            }
+
+            Node siblingRight;
+            if(children.size() - 1 > index)
+                siblingRight = children.get(index + 1); //right sibling should exist
+            else
+                return false; //No siblings to match
+
+            if(siblingRight.getValues().size() == treeCapacity * 2)
+                return false; //sibling is full
+
+            //compensate with right
+
         }
         //Node sibling = temp.getChildren().get(temp.getChildren().indexOf(current));
         return false;
