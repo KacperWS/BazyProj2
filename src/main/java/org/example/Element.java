@@ -20,4 +20,12 @@ public class Element {
     public void setOffset(long offset) {
         this.offset = offset;
     }
+
+    @Override
+    public String toString() {
+        return "Element{" +
+                "key=" + key +
+                ", offset=" + offset +
+                '}';
+    }
 }

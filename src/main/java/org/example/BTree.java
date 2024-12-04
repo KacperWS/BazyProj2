@@ -269,4 +269,20 @@ public class BTree {
         }
     }
 
+    public void printTree(Node node, int level) {
+        if (node == null) return;
+
+        // Print current level and its values
+        System.out.println("Level " + level + ": " + node.toString());
+
+        // Recursively print the children if they exist
+        for (Node child : node.getChildren()) {
+            printTree(child, level + 1);
+        }
+    }
+
+    // To print the whole tree starting from root
+    public void display() {
+        printTree(root, 0);
+    }
 }

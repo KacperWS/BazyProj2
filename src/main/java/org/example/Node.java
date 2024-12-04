@@ -43,4 +43,12 @@ public class Node {
         this.pointers = pointers;
         this.values = values;
     }
+
+    @Override
+    public String toString() {
+        String t="";
+        for (int i = 0; i < values.size(); i++)
+            t+= values.get(i).toString() + " ";
+        return t;
+    }
 }
