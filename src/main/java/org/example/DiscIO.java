@@ -112,7 +112,7 @@ public class DiskIO {
         }
     }
 
-    public List<Record> read(int bufferSize, long offset) throws IOException{
+    public List<Record> read2(int bufferSize, long offset) throws IOException{
 
         byte[] buffer = new byte[pageSize * Integer.BYTES * recordSize];
         List<Record> lista = new ArrayList<>();
@@ -180,40 +180,11 @@ public class DiskIO {
             temp.putLong(node.getPointers().get(i));
 
         temp.flip();
-
+        temp.get(binaryData);
+        raf.write(binaryData);
         closeRAF();
     }
 
-    public boolean sortHere(int n, Buffer buffer, int bufferSize) throws IOException {
-        openRAF("r");
-        byte[] bufferByte = new byte[bufferSize];
-        List<Record> lista = new ArrayList<>();
-        raf.seek(buffer.getJump() + buffer.getBytesRead());
-        if (raf.read(bufferByte) != -1) {
-            ByteBuffer bufferme;
-            bufferme = ByteBuffer.wrap(bufferByte);
-            IntBuffer test = bufferme.asIntBuffer();
-            int i = 0; int hmm = this.recordSize;
-            int[] array = new int [hmm];
-            while(i < test.capacity()){
-                array[i%hmm] = test.get(i);
-                i++;
-                if(i%hmm == 0){
-                    Record newRecord = new Record(Arrays.copyOf(array, array.length));
-                    /*if (newRecord.isEmpty())
-                        break;*/
-                    lista.add(newRecord);
-                }
-            }
-        }else {
-            closeRAF(); //File ended
-            return true; //Indicates that file ended
-        }
-        //buffer.updateBytesRead(lista.size() * 6 * Integer.BYTES);
-        //buffer.setBuffer(lista); readCounter++;
-        closeRAF();
-        return false;
-    }
 
     public void deleteFile(){
         Path path = Paths.get(filename);

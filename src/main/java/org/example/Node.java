@@ -7,6 +7,7 @@ public class Node {
     private List<Element> values;
     private List<Long> pointers;
     private List<Node> children;
+    private int number;
 
 
     public Node(int d) {
@@ -42,6 +43,14 @@ public class Node {
     public void set(List<Element> values, List<Long> pointers) {
         this.pointers = pointers;
         this.values = values;
+    }
+
+    public int getNumber() {
+        return number;
+    }
+
+    public void setNumber(int number) {
+        this.number = number;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.example;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -8,11 +9,14 @@ public class BTree {
     //private List<Node> tree;
     private Node root;
     private List<Node> path;
+    private List<Node> pathCopy;
     private List<Long> deletedPages;
     private List<Long> deletedRecords;
     private final int pageSize;
-    private final int treeCapacity;
-    private Node current = null;    //d value
+    private final int treeCapacity; //d value
+    private Node current = null;
+    private DiskIO disc;
+    private int pageNumber = 0; //first free page number to use
 
     public BTree(int treeCapacity) {
         this.pageSize = treeCapacity * 4 + 1;
@@ -24,6 +28,8 @@ public class BTree {
         Node root = new Node(treeCapacity);
         this.root = root;
         current = root;
+        root.setNumber(pageNumber);
+        pageNumber++;
         //tree.add(root);
     }
 
@@ -49,6 +55,7 @@ public class BTree {
         if(current == null)
             return;
         if(current.getValues().size() < 2 * treeCapacity){
+            pathCopy.add(current);
             Element newElement = new Element(key, offset);
             current.getValues().add(newElement);
             current.getValues().sort(Comparator.comparingInt(Element::getKey));
@@ -58,10 +65,22 @@ public class BTree {
             if(!compensate(key, offset))
                 split(key, offset);
         }
+        //savePage();
         path.clear();
+        pathCopy.clear();
     }
 
     private void insert2(Node node) {
+
+    }
+
+    private void loadPage() throws IOException {
+
+    }
+
+    private void savePage() throws IOException {
+        for (Node node : pathCopy)
+            disc.save(node, node.getNumber());
 
     }
 
@@ -147,7 +166,7 @@ public class BTree {
             current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
             siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
-
+            pathCopy.add(siblingRight); pathCopy.add(current);//nodes to resave
             return true;
         }
         else {
@@ -168,7 +187,7 @@ public class BTree {
                 siblingLeft.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
                 current.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
-
+                pathCopy.add(siblingLeft); pathCopy.add(current);//nodes to resave
                 return true;
             }
 
@@ -197,7 +216,7 @@ public class BTree {
             current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
             siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
-
+            pathCopy.add(siblingRight); pathCopy.add(current); //nodes to resave
             return true;
         }
     }
@@ -207,7 +226,8 @@ public class BTree {
             Node parent = path.get(path.indexOf(current) - 1);
             List<Node> children = parent.getChildren();
             Node newNode = new Node(treeCapacity);
-
+            newNode.setNumber(pageNumber);
+            pathCopy.add(newNode); pathCopy.add(current); pathCopy.add(parent); //all nodes to resave
             if (current.getChildren().isEmpty()) { //Code below to add to leaf
                 Element newOne = new Element(key, offset);
 
@@ -261,6 +281,8 @@ public class BTree {
             if(current.getValues().size() > treeCapacity * 2 || current.getChildren().isEmpty()){ //root too full or just created
                 Node temp = root;
                 Node newRoot = new Node(treeCapacity);
+                newRoot.setNumber(0);
+                root.setNumber(pageNumber);
                 root = newRoot;
                 newRoot.getChildren().add(temp);
                 path.addFirst(root);
