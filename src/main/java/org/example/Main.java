@@ -9,6 +9,7 @@ public class Main {
             temp.insert(i,i);
         Element t = temp.search(2, temp.getRoot());
         temp.display();
+        temp.delete();
         //System.out.print(Math.round(5/2.0));
     }
 }

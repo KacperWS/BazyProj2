@@ -331,4 +331,8 @@ public class BTree {
     public void display() throws IOException {
         printTree(root, 0);
     }
+
+    public void delete() {
+        disc.deleteFile();
+    }
 }
