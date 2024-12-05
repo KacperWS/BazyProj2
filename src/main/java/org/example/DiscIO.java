@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.nio.ByteBuffer;
 
-public class DiskIO {
+public class DiscIO {
     private String filename;
     private String filenameNoext;
     private int readCounter;
@@ -22,7 +22,7 @@ public class DiskIO {
     private final int pageSizeBytes;
     private int recToGenerate = 10000 * recordSize;
 
-    public DiskIO(String filename, int pageSize) throws IOException {
+    public DiscIO(String filename, int pageSize) {
         this.filename = filename;
         this.pageSize = pageSize;
         this.pageSizeBytes = pageSize * 2 * Integer.BYTES + pageSize * 2 * Long.BYTES + (pageSize * 2 + 1) * Long.BYTES;
@@ -126,10 +126,10 @@ public class DiskIO {
                 array[i%hmm] = test.get(i);
                 i++;
                 if(i%hmm == 0){
-                    Record newRecord = new Record(Arrays.copyOf(array, array.length));
+                    //Record newRecord = new Record(Arrays.copyOf(array, array.length));
                     /*if (newRecord.isEmpty())
                         break;*/
-                    lista.add(newRecord);
+                    //lista.add(newRecord);
                 }
             }
         }else {
@@ -140,48 +140,66 @@ public class DiskIO {
         return lista;
     }
 
-    public Node read(int pageNumber) throws IOException{
+    public Node read(long pageNumber) throws IOException{
         openRAF("r");
         byte[] buffer = new byte[pageSizeBytes]; //2d keys + 2d keys offsets and 2d+1 offsets
         //List<Record> lista = new ArrayList<>();
         Node temp = new Node(pageSize);
-        raf.seek((long) pageNumber * pageSizeBytes);
-        if (bis.read(buffer) != -1) {
+        raf.seek(pageNumber * pageSizeBytes);
+        if (raf.read(buffer) != -1) {
             ByteBuffer bufferme;
             bufferme = ByteBuffer.wrap(buffer);
             IntBuffer buffer1 = bufferme.asIntBuffer();
             LongBuffer buffer2 = bufferme.asLongBuffer();
-            for (int i = 0; i < pageSize * 2; i++)
-                temp.getValues().add(new Element(buffer1.get(i), buffer2.get(i + pageSize)));
-            for (int i = 0, j = pageSize * 3; i < pageSize * 2 + 1; i++ , j++)
-                temp.getPointers().add(buffer2.get(j));
+            for (int i = 0; i < pageSize * 2; i++) {
+                if(buffer1.get(i) != -1)
+                    temp.getValues().add(new Element(buffer1.get(i), buffer2.get(i + pageSize)));
+            }
+            for (int i = 0, j = pageSize * 3; i < pageSize * 2 + 1; i++ , j++) {
+                if(buffer2.get(j) != -1)
+                    temp.getPointers().add(buffer2.get(j));
+            }
         }else {
             closeRAF(); //File ended
             return null; //Indicates that file ended
         }
         readCounter++;
         closeRAF();
+        temp.setNumber(pageNumber);
         return temp;
     }
 
-    public void save(Node node, int pageNumber) throws IOException{
+    public void save(Node node, long pageNumber) throws IOException{
         //openOUT(addon, true);
-        openRAF("w");
-        raf.seek((long) pageNumber * pageSizeBytes);
+        openRAF("rw");
+        raf.seek(pageNumber * pageSizeBytes);
         byte[] binaryData = new byte[pageSizeBytes];
         ByteBuffer temp = ByteBuffer.allocate(pageSizeBytes);
         //Puts elements to buffer /key /offset
-        for(int i = 0; i < pageSize * 2; i++)
-            temp.putInt(node.getValues().get(i).getKey());
-        for(int i = 0; i < pageSize * 2; i++)
-            temp.putLong(node.getValues().get(i).getOffset());
+        for(int i = 0; i < pageSize * 2; i++) {
+            if(i < node.getValues().size())
+                temp.putInt(node.getValues().get(i).getKey());
+            else
+                temp.putInt(-1);
+        }
+        for(int i = 0; i < pageSize * 2; i++) {
+            if(i < node.getValues().size())
+                temp.putLong(node.getValues().get(i).getOffset());
+            else
+                temp.putLong(-1);
+        }
 
-        for (int i = 0; i < pageSize * 2 + 1; i++) //Pointers to childs
-            temp.putLong(node.getPointers().get(i));
+        for (int i = 0; i < pageSize * 2 + 1; i++) {//Pointers to childs
+            if(i < node.getPointers().size())
+                temp.putLong(node.getPointers().get(i));
+            else
+                temp.putLong(-1);
+        }
 
         temp.flip();
         temp.get(binaryData);
         raf.write(binaryData);
+        writeCounter++;
         closeRAF();
     }
 

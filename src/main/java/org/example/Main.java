@@ -1,7 +1,9 @@
 package org.example;
 
+import java.io.IOException;
+
 public class Main {
-    public static void main() {
+    public static void main() throws IOException {
         BTree temp = new BTree(1);
         for (int i = 0; i < 10; i++)
             temp.insert(i,i);
