@@ -335,6 +335,7 @@ public class BTree {
     // To print the whole tree starting from root
     public void display() throws IOException {
         printTree(root, 0);
+        disc.showResults();
     }
 
     public void delete() {
