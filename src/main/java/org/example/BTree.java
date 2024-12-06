@@ -246,7 +246,9 @@ public class BTree {
             List<Node> children = parent.getChildren();
             Node newNode = new Node(treeCapacity);
             newNode.setNumber(pageNumber++);
-            pathCopy.add(newNode); pathCopy.add(current); pathCopy.add(parent); //all nodes to resave
+            if(!pathCopy.contains(current))
+                pathCopy.add(current);
+            pathCopy.add(newNode); pathCopy.add(parent); //all nodes to resave
             if (current.getPointers().isEmpty()) { //Code below to add to leaf
                 Element newOne = new Element(key, offset);
 
