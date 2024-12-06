@@ -233,7 +233,7 @@ public class BTree {
             int middleValue = (int) Math.round(temp.size()/2.0 - 1);
             Element middle = temp.get(middleValue); //choose middle
 
-            parent.getValues().set(index - 1, middle); // set parent to middle
+            parent.getValues().set(index, middle); // set parent to middle
 
             current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
