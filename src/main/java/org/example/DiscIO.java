@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 public class DiscIO {
     private String filename;
     private String filenameNoext;
+    private String filenameRecords = "records.txt";
     private int readCounter;
     private int writeCounter;
     private BufferedInputStream bis;
@@ -20,6 +21,7 @@ public class DiscIO {
     private final int recordSize = 7;
     private final int pageSize;
     private final int pageSizeBytes;
+    private int records;
     private int recToGenerate = 10000 * recordSize;
 
     public DiscIO(String filename, int pageSize) {
@@ -28,6 +30,7 @@ public class DiscIO {
         this.pageSizeBytes = pageSize * 2 * Integer.BYTES + pageSize * 2 * Long.BYTES + (pageSize * 2 + 1) * Long.BYTES;
         String[] stringArray = filename.split("\\.");
         this.filenameNoext = stringArray[0];
+        this.records = 0;
     }
 
     public void setRecToGenerate(int recToGenerate) {
@@ -112,11 +115,11 @@ public class DiscIO {
         }
     }
 
-    public List<Record> read2(int bufferSize, long offset) throws IOException{
-
-        byte[] buffer = new byte[pageSize * Integer.BYTES * recordSize];
-        List<Record> lista = new ArrayList<>();
-        if (bis.read(buffer) != -1) {
+    public Record readRecord(long offset) throws IOException{
+        openRAF("r");
+        byte[] buffer = new byte[Long.BYTES + Integer.BYTES * recordSize];
+        raf.seek(offset);
+        if (raf.read(buffer) != -1) {
             ByteBuffer bufferme;
             bufferme = ByteBuffer.wrap(buffer);
             IntBuffer test = bufferme.asIntBuffer();
@@ -133,10 +136,11 @@ public class DiscIO {
                 }
             }
         }else {
-            closeIN(); //File ended
+            closeRAF(); //File ended
             return null; //Indicates that file ended
         }
         readCounter++;
+        closeRAF();
         return lista;
     }
 
