@@ -136,7 +136,7 @@ public class BTree {
                 return null;
             }*/
             Node childNode = disc.read(s.getPointers().get(x));//s.getChildren().get(x);
-            current.getChildren().add(x, childNode); current.getChildren().remove(x + 1);
+            s.getChildren().add(x, childNode); s.getChildren().remove(x + 1);
             path.add(childNode);
             current = childNode;// Get the child node based on the index
             return search(key, childNode); // Recursively search in the child node
