@@ -8,14 +8,14 @@ import java.util.List;
 public class BTree {
     //private List<Node> tree;
     private Node root;
-    private List<Node> path;
-    private List<Node> pathCopy;
-    private List<Integer> deletedPages;
-    private List<Long> deletedRecords;
+    private final List<Node> path;
+    private final List<Node> pathCopy;
+    private final List<Integer> deletedPages;
+    private final List<Long> deletedRecords;
     private final int pageSize;
     private final int treeCapacity; //d value
-    private Node current = null;
-    private DiscIO disc;
+    private Node current;
+    private final DiscIO disc;
     private int pageNumber = 0; //first free page number to use
     private long offset = 0;
 
@@ -99,9 +99,24 @@ public class BTree {
     }
 
     private void merge(Element delete) {
+        Node parent = path.get(path.indexOf(current) - 1);
+        List<Node> children = parent.getChildren();
+        if(children.size() < 2){ //Last child if d = 1
+            parent.getChildren().clear();
+            parent.getPointers().clear();
+            current = parent;
+            return;
+        }
+        int index = parent.getChildren().indexOf(current);
+        if(index < 1) { //merge with right
+            current.getValues().remove(delete);
+            List<Element> temp = current.getValues();
+            
+        }
+
         if(path.size() > 1) {
-            Node parent = path.get(path.indexOf(current) - 1);
-            List<Node> children = parent.getChildren();
+            //Node parent = path.get(path.indexOf(current) - 1);
+            //List<Node> children = parent.getChildren();
             Node newNode = new Node(treeCapacity);
             newNode.setNumber(pageNumber++);
             if(!pathCopy.contains(current))
