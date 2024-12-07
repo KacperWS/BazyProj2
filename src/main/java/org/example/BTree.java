@@ -178,9 +178,9 @@ public class BTree {
             current.getPointers().addAll(0, siblingLeft.getPointers());
 
             siblingLeft.getValues().clear();
-            parent.getValues().removeFirst();
-            parent.getPointers().removeFirst();
-            parent.getChildren().removeFirst();
+            parent.getValues().remove(index - 1);
+            parent.getPointers().remove(index - 1);
+            parent.getChildren().remove(index - 1);
 
             pathCopy.add(siblingLeft); pathCopy.add(parent);
 
