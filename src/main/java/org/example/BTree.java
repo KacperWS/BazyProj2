@@ -17,6 +17,7 @@ public class BTree {
     private Node current = null;
     private DiscIO disc;
     private int pageNumber = 0; //first free page number to use
+    private long offset = 0;
 
     public BTree(int treeCapacity) {
         this.pageSize = treeCapacity * 4 + 1;
@@ -51,7 +52,8 @@ public class BTree {
         return deletedPages;
     }
 
-    public void insert(int key, long offset) throws IOException {
+    public void insert(int key, int[] record) throws IOException {
+        current = root;
         path.add(root);
         search(key, root);
         if(current == null) {
@@ -69,11 +71,13 @@ public class BTree {
             if(!compensate(key, offset))
                 split(key, offset);
         }
+        disc.saveRecord(offset, key, record);
+        offset+= Integer.BYTES * 7;
         savePage();
         path.clear();
         pathCopy.clear();
         root.getChildren().clear();
-        current = root;
+        //current = root;
     }
 
     private Node loadPage(long pageNum) throws IOException {

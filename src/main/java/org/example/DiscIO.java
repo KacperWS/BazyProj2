@@ -87,6 +87,10 @@ public class DiscIO {
         this.raf = new RandomAccessFile(filename, op);
     }
 
+    public void openRAF2(String filename, String op) throws FileNotFoundException {
+        this.raf = new RandomAccessFile(filename, op);
+    }
+
     public void createDataset() {
         String fileName = "ter.txt";
         deleteFile();
@@ -116,32 +120,44 @@ public class DiscIO {
     }
 
     public Record readRecord(long offset) throws IOException{
-        openRAF("r");
-        byte[] buffer = new byte[Long.BYTES + Integer.BYTES * recordSize];
+        openRAF2("Records.txt","r");
+        byte[] buffer = new byte[Integer.BYTES * recordSize];
         raf.seek(offset);
+        Record newRec;
         if (raf.read(buffer) != -1) {
             ByteBuffer bufferme;
             bufferme = ByteBuffer.wrap(buffer);
-            IntBuffer test = bufferme.asIntBuffer();
-            int i = 0; int hmm = this.recordSize;
+            long id = bufferme.getInt();
+            int i = 0; int hmm = this.recordSize - 1;
             int[] array = new int [hmm];
-            while(i < test.capacity()){
-                array[i%hmm] = test.get(i);
+            while(i < recordSize - 1){
+                array[i%hmm] = bufferme.getInt();
                 i++;
-                if(i%hmm == 0){
-                    //Record newRecord = new Record(Arrays.copyOf(array, array.length));
-                    /*if (newRecord.isEmpty())
-                        break;*/
-                    //lista.add(newRecord);
-                }
             }
+            newRec = new Record(id, array);
         }else {
             closeRAF(); //File ended
             return null; //Indicates that file ended
         }
-        readCounter++;
+        //writeCounter++;
         closeRAF();
-        return lista;
+        return newRec;
+    }
+
+    public void saveRecord(long offset, int key, int[] data) throws IOException{
+        openRAF2("Records.txt", "rw");
+        byte[] buffer = new byte[Integer.BYTES * recordSize];
+        raf.seek(offset);
+        ByteBuffer temp = ByteBuffer.allocate(Integer.BYTES * recordSize);
+        temp.putInt(key);
+        for(int i = 0; i < 6; i++)
+            temp.putInt(data[i]);
+
+        temp.flip();
+        temp.get(buffer);
+        raf.write(buffer);
+        //readCounter++;
+        closeRAF();
     }
 
     public Node read(long pageNumber) throws IOException{
@@ -256,47 +272,5 @@ public class DiscIO {
         System.out.println("Reads: " + readCounter + " Writes: " + writeCounter);
     }
 
-    public void check(){
-        try (FileInputStream fis = new FileInputStream(filename)) {
-            byte[] byteBuffer = new byte[4];
-            int i = 0;
-            int[] temp = new int[6];
-            int suma = 0; int next = -1; int check = 0;
-            while (fis.read(byteBuffer) != -1) {
-                ByteBuffer byteBufferWrapper = ByteBuffer.wrap(byteBuffer);
-                int number = byteBufferWrapper.getInt();
-                if(i%6 == 0 && i > 0){
-                    int x = temp[5];
-                    suma = 0; int xpower = x;
-                    suma += temp[0] + temp[1] * xpower;
-                    suma+= temp[2] * (xpower *= x);
-                    suma+= temp[3] * (xpower *= x);
-                    suma+= temp[4] * (xpower * x);
-                    if(next <= suma)
-                        check++;
-                    else check--;
-                    //System.out.println("Rekord = " + suma + " next " + next);
-                    next = suma;
-                }
-                temp[i%6] = number;
-                //System.out.print(number + " ");
-                i++;
-            }
-            int x = temp[5];
-            suma = 0;int xpower = x;
-            suma += temp[0] + temp[1] * xpower;
-            suma+= temp[2] * (xpower *= x);
-            suma+= temp[3] * (xpower *= x);
-            suma+= temp[4] * (xpower * x);
-            if(next <= suma)
-                check++;
-            else
-                check--;
-            //next = suma;
-            System.out.println("Rekord = " + check);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }
 

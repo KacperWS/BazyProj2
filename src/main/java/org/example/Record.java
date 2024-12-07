@@ -1,5 +1,7 @@
 package org.example;
 
+import java.util.Arrays;
+
 public class Record {
 
     private long id;
@@ -28,5 +30,13 @@ public class Record {
 
     public void setData(int[] data) {
         this.data = data;
+    }
+
+    @Override
+    public String toString() {
+        return "Record{" +
+                "id=" + id +
+                ", data=" + Arrays.toString(data) +
+                '}';
     }
 }
