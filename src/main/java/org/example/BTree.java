@@ -98,93 +98,91 @@ public class BTree {
         }
     }
 
-    private void merge(Element delete) {
+    private void merge(Element delete) throws IOException {
         Node parent = path.get(path.indexOf(current) - 1);
         List<Node> children = parent.getChildren();
         if(children.size() < 2){ //Last child if d = 1
             parent.getChildren().clear();
             parent.getPointers().clear();
+            pathCopy.add(parent);
             current = parent;
             return;
         }
         int index = parent.getChildren().indexOf(current);
         if(index < 1) { //merge with right
-            current.getValues().remove(delete);
-            List<Element> temp = current.getValues();
-            
-        }
+            Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
+            children.add(1, siblingRight);
+            children.remove(2);
 
-        if(path.size() > 1) {
-            //Node parent = path.get(path.indexOf(current) - 1);
-            //List<Node> children = parent.getChildren();
-            Node newNode = new Node(treeCapacity);
-            newNode.setNumber(pageNumber++);
-            if(!pathCopy.contains(current))
-                pathCopy.add(current);
-            pathCopy.add(newNode); pathCopy.add(parent); //all nodes to resave
-            if (current.getPointers().isEmpty()) { //Code below to add to leaf
-                //Element newOne = new Element(key, offset);
+            //current.getValues().remove(delete);
+            current.getValues().add(parent.getValues().get(index));
+            current.getValues().addAll(siblingRight.getValues());
+            current.getPointers().addAll(siblingRight.getPointers());
 
-                //current.getValues().add(newOne);
-                current.getValues().sort(Comparator.comparingInt(Element::getKey));
+            siblingRight.getValues().clear();
+            parent.getPointers().remove(1);
+            parent.getChildren().remove(1);
 
-                int middleValue = (int) Math.round(current.getValues().size() / 2.0 - 1);
-                List<Element> tempList; //redistribute equally
+            pathCopy.add(siblingRight); pathCopy.add(current); pathCopy.add(parent);//nodes to resave
 
-                List<Element> temp = current.getValues();
-                tempList = new ArrayList<>(temp.subList(middleValue + 1, temp.size()));
-                newNode.setValues(tempList);
-                List<Element> tempList1;
-                tempList1 = new ArrayList<>(temp.subList(0, middleValue));
-                Element middle = temp.get(middleValue);
-                temp.clear();
-                temp.addAll(tempList1);
-
-                int index = children.indexOf(current);
-                parent.getChildren().add(index + 1, newNode);
-                parent.getPointers().add(index + 1, newNode.getNumber());
-                parent.getValues().add(index, middle);
-            } else if (current.getValues().size() > treeCapacity * 2) { //Works on root and other
-                int middleValue = (int) Math.round(current.getValues().size() / 2.0 - 1);
-                List<Element> tempList; //redistribute equally
-
-                List<Element> temp = current.getValues();
-                tempList = new ArrayList<>(temp.subList(middleValue + 1, temp.size()));
-                newNode.setValues(tempList);
-                List<Element> tempList1;
-                tempList1 = new ArrayList<>(temp.subList(0, middleValue));
-                Element middle = temp.get(middleValue);
-                temp.clear();
-                temp.addAll(tempList1);
-
-                int index = children.indexOf(current);
-                parent.getChildren().add(index + 1, newNode);
-                parent.getPointers().add(index + 1, newNode.getNumber());
-                parent.getValues().add(index, middle);
-
-                newNode.setPointers(new ArrayList<>(current.getPointers().subList(middleValue + 1, current.getPointers().size())));
-                newNode.setChildren(new ArrayList<>(current.getChildren().subList(middleValue + 1, current.getChildren().size())));
-
-                current.setPointers(new ArrayList<>(current.getPointers().subList(0, middleValue + 1)));
-                current.setChildren(new ArrayList<>(current.getChildren().subList(0, middleValue + 1)));
-            }
-            path.remove(current);
-            current = parent;
-            //split(key, offset);
         }
         else {
-            if(current.getValues().size() > treeCapacity * 2 || current.getChildren().isEmpty()){ //root too full or just created
-                Node temp = root;
-                Node newRoot = new Node(treeCapacity);
-                newRoot.setNumber(0);
-                root.setNumber(pageNumber++);
-                root = newRoot;
-                newRoot.getChildren().add(temp);
-                newRoot.getPointers().add(current.getNumber());
-                path.addFirst(root);
-                //split(key, offset);
+            Node siblingLeft = disc.read(parent.getPointers().get(index - 1));
+            //Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
+            children.add(index - 1, siblingLeft);
+            children.remove(index);
+
+            current.getValues().addFirst(parent.getValues().get(index));
+            current.getValues().addAll(0, siblingLeft.getValues());
+            current.getPointers().addAll(siblingLeft.getPointers());
+
+            siblingLeft.getValues().clear();
+
+            pathCopy.add(siblingLeft); pathCopy.add(current); pathCopy.add(parent);
+
+
+            Node siblingRight;
+            if(parent.getPointers().size() - 1 > index) {
+                siblingRight = disc.read(parent.getPointers().get(index + 1));//children.get(index + 1); //right sibling should exist
+                children.add(index + 1, siblingRight);
+                children.remove(index + 2);
             }
+            else
+                //return false; //No siblings to match
+
+            //if(siblingRight.getValues().size() == treeCapacity * 2)
+                //return false; //sibling is full
+
+            //compensate with right
+            //Node siblingRight = children.get(1);
+            //Element newOne = new Element(key, offset);
+            current.getValues().remove(delete);
+            List<Element> temp = current.getValues();
+            temp.add(parent.getValues().get(index));
+            temp.addAll(siblingRight.getValues());
+            //temp.add(newOne); //create temp list with all
+            //temp.sort(Comparator.comparingInt(Element::getKey));
+            int middleValue = (int) Math.round(temp.size()/2.0 - 1);
+            Element middle = temp.get(middleValue); //choose middle
+
+            parent.getValues().set(index, middle); // set parent to middle
+
+            current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
+
+            siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
+            if(!current.getPointers().isEmpty()){
+                current.getPointers().add(siblingRight.getPointers().getFirst());
+                current.getChildren().add(siblingRight.getChildren().getFirst());
+                siblingRight.getPointers().removeFirst();
+                siblingRight.getChildren().removeFirst();
+            }
+
+            pathCopy.add(siblingRight); pathCopy.add(current); pathCopy.add(parent);//nodes to resave
+            //return true;
         }
+
+
     }
 
     public boolean updateRecord(int key, int[] data) throws IOException {
@@ -212,7 +210,7 @@ public class BTree {
 
     private int find(int key, Node node){
         List<Element> temp = node.getValues();
-        int i = 0;
+        int i;
         for(i = 0; i < temp.size(); i++){
             if(temp.get(i).getKey() >= key)
                 return i;
@@ -261,7 +259,7 @@ public class BTree {
     private boolean compensateDel(Element delete) throws IOException {
         if(current == root)
             return false;
-        //Only possible in leaf
+        //
         Node parent = path.get(path.indexOf(current) - 1);
         List<Node> children = parent.getChildren();
         if (children.size() < 2) //No siblings to compensate
@@ -289,6 +287,14 @@ public class BTree {
             current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
             siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
+            if(!current.getPointers().isEmpty()){
+                current.getPointers().add(siblingRight.getPointers().getFirst());
+                current.getChildren().add(siblingRight.getChildren().getFirst());
+                siblingRight.getPointers().removeFirst();
+                siblingRight.getChildren().removeFirst();
+            }
+
             pathCopy.add(siblingRight); pathCopy.add(current); pathCopy.add(parent);//nodes to resave
             return true;
         }
@@ -314,6 +320,14 @@ public class BTree {
                 siblingLeft.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
                 current.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
+                if(!current.getPointers().isEmpty()){
+                    current.getPointers().addFirst(siblingLeft.getPointers().getLast());
+                    current.getChildren().addFirst(siblingLeft.getChildren().getLast());
+                    siblingLeft.getPointers().removeLast();
+                    siblingLeft.getChildren().removeLast();
+                }
+
                 pathCopy.add(siblingLeft); pathCopy.add(current); pathCopy.add(parent);//nodes to resave
                 return true;
             }
@@ -347,6 +361,14 @@ public class BTree {
             current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
             siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
+            if(!current.getPointers().isEmpty()){
+                current.getPointers().add(siblingRight.getPointers().getFirst());
+                current.getChildren().add(siblingRight.getChildren().getFirst());
+                siblingRight.getPointers().removeFirst();
+                siblingRight.getChildren().removeFirst();
+            }
+
             pathCopy.add(siblingRight); pathCopy.add(current); pathCopy.add(parent);//nodes to resave
             return true;
         }
