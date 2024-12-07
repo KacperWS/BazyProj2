@@ -55,8 +55,7 @@ public class BTree {
     public void insert(int key, int[] record) throws IOException {
         current = root;
         path.add(root);
-        search(key, root);
-        if(current == null) {
+        if(search(key, root) != null) {
             path.clear();
             pathCopy.clear();
             return;
@@ -80,6 +79,32 @@ public class BTree {
         //current = root;
     }
 
+    public void delete(int key) throws IOException {
+        current = root;
+        path.add(root);
+        Element temp = search(key, root);
+        if(temp == null) {
+            path.clear();
+            pathCopy.clear();
+            return;
+        }
+        if (current.getPointers().isEmpty()) { //leaf
+            if(current.getValues().size() > treeCapacity)
+                return; //simple delete
+            else {
+                //try compensation
+            }
+        }
+    }
+
+    public boolean updateRecord(int key, int[] data) throws IOException {
+        Element temp = search(key, root);
+        if(temp ==null)
+            return false;
+        disc.saveRecord(temp.getOffset(), key, data);
+        return true;
+    }
+
     private Node loadPage(long pageNum) throws IOException {
         return disc.read(pageNum);
     }
@@ -95,17 +120,7 @@ public class BTree {
 
     }
 
-    public int findPlace(Node node, int key){
-        List<Element> temp = node.getValues();
-        for(int i = 0; i < node.getValues().size(); i++){
-            if(temp.get(i).getKey() > key){
-                return i;
-            }
-        }
-        return 0;
-    }
-
-    public int find(int key, Node node){
+    private int find(int key, Node node){
         List<Element> temp = node.getValues();
         int i = 0;
         for(i = 0; i < temp.size(); i++){
@@ -129,7 +144,7 @@ public class BTree {
         // If the key is found in the current node, return it
         if(x < (s.getValues().size())) {
             if (s.getValues().get(x).getKey() == key) {
-                current = null;  // Reset current node, if necessary
+                //current = null;  // Reset current node, if necessary
                 return s.getValues().get(x);
             }
         }
@@ -153,8 +168,44 @@ public class BTree {
         return null;
     }
 
+    private boolean compensateDel(int key, int number) throws IOException {
+        if(current == root)
+            return false;
+        //Only possible in leaf
+        Node parent = path.get(path.indexOf(current) - 1);
+        List<Node> children = parent.getChildren();
+        if (children.size() < 2) //No siblings to compensate
+            return false;
+        int index = children.indexOf(current);
+        if(index < 1) { //Right sibling should exist
+            Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
+            children.add(1, siblingRight);
+            children.remove(2);
+            if(siblingRight.getValues().size() == treeCapacity )
+                return false; //sibling has exactly 'd' keys
 
-    public boolean compensate(int key, long offset) throws IOException {
+            List<Element> temp = siblingRight.getValues(); //May be improved!!!
+            temp.add(parent.getValues().get(index));
+            temp.addAll(children.get(index).getValues());
+            //temp.add(newOne); //create temp list with all
+            temp.sort(Comparator.comparingInt(Element::getKey));
+            int middleValue = (int) Math.round(temp.size()/2.0 - 1);
+            Element middle = temp.get(middleValue); //choose middle
+
+            parent.getValues().set(index, middle); // set parent to middle
+            //redistribute equally
+
+            current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
+
+            siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+            pathCopy.add(siblingRight); pathCopy.add(current); pathCopy.add(parent);//nodes to resave
+            return true;
+        }
+
+        return true;
+    }
+
+    private boolean compensate(int key, long offset) throws IOException {
         if(current == root)
             return false;
         //Only possible in leaf
@@ -168,7 +219,7 @@ public class BTree {
             Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
             children.add(1, siblingRight);
             children.remove(2);
-            if(children.get(1).getValues().size() == treeCapacity * 2)
+            if(siblingRight.getValues().size() == treeCapacity * 2)
                 return false; //sibling is full
 
             Element newOne = new Element(key, offset);
@@ -247,7 +298,7 @@ public class BTree {
         }
     }
 
-    public void split(int key, long offset) {
+    private void split(int key, long offset) {
         if(path.size() > 1) {
             Node parent = path.get(path.indexOf(current) - 1);
             List<Node> children = parent.getChildren();
@@ -296,14 +347,11 @@ public class BTree {
                 parent.getPointers().add(index + 1, newNode.getNumber());
                 parent.getValues().add(index, middle);
 
-
-
                 newNode.setPointers(new ArrayList<>(current.getPointers().subList(middleValue + 1, current.getPointers().size())));
                 newNode.setChildren(new ArrayList<>(current.getChildren().subList(middleValue + 1, current.getChildren().size())));
 
                 current.setPointers(new ArrayList<>(current.getPointers().subList(0, middleValue + 1)));
                 current.setChildren(new ArrayList<>(current.getChildren().subList(0, middleValue + 1)));
-
             }
             path.remove(current);
             current = parent;
@@ -342,7 +390,7 @@ public class BTree {
         disc.showResults();
     }
 
-    public void delete() {
+    public void deleteFile() {
         disc.deleteFile();
     }
 }

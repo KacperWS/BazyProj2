@@ -27,7 +27,7 @@ public class Main {
         test = temp.search(26, temp.getRoot()); my = disc.readRecord(test.getOffset());
         System.out.println(my.toString());
 
-        temp.delete();
+        temp.deleteFile();
         //System.out.print(Math.round(5/2.0));
     }
 }
