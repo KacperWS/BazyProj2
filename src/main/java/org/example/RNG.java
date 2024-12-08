@@ -17,9 +17,8 @@ public class RNG {
     }
 
     public long random() {
-        if(x != x0)
-            test.add(x);
-        return x = (a * x + c + new Random().nextLong(x0)) % m % 1000;
+        test.add(x);
+        return x = (a * x + c + new Random().nextLong(x0)) % m % x0;
     }
 
     public int check() {
@@ -32,7 +31,6 @@ public class RNG {
         }
         return test.size();
     }
-
     public long value() {
         return test.iterator().next();
     }

@@ -1,6 +1,8 @@
 package org.example;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
     public static void main() throws IOException {
@@ -45,21 +47,33 @@ public class Main {
         }
         temp.delete(8);
         temp.delete(5);
-        temp.delete(3);
+        temp.delete(3);*/
+        List<Integer> delete = new ArrayList<>();
+        RNG tester = new RNG(1000);
+        for (int i = 0; i < 10; i++) {
+            array[4]=i;
+            long val = tester.random();
+            if(i % 3 == 0)
+                delete.add((int) val);
+            temp.insert((int) val, array);
+        }
+        //temp.display();
+        for (Integer integer : delete) {
+            temp.delete(integer);
+        }
         temp.display();
-
-        Element test = temp.search(6, temp.getRoot(), false); Record my = disc.readRecord(test.getOffset());
+        /*Element test = temp.search(6, temp.getRoot(), false); Record my = disc.readRecord(test.getOffset());
         System.out.println(my.toString());
         temp.updateRecord(6, new int[]{0, 1, 2, 3, 3, 4});
         test = temp.search(6, temp.getRoot(), false); my = disc.readRecord(test.getOffset());
-        System.out.println(my.toString());
+        System.out.println(my.toString());*/
 
-        temp.deleteFile();*/
+        temp.deleteFile();
         //System.out.print(Math.round(5/2.0));
 
-        RNG tester = new RNG(1000);
+        /*RNG tester = new RNG(1000);
         for (int j = 0; j < 100000; j++)
             System.out.println(tester.random());
-        System.out.println("Random numbers = " + tester.check());
+        System.out.println("Random numbers = " + tester.check());*/
     }
 }

@@ -126,6 +126,8 @@ public class BTree {
                         newRoot.setNumber(0);
                         root = newRoot;
                         break;
+                    } else if (current == root) {
+                        break;
                     }
                     if (!compensateDel()) {
                         merge();
@@ -572,7 +574,9 @@ public class BTree {
 
     // To print the whole tree starting from root
     public void display() throws IOException {
+        disc.invertCounters();
         printTree(root, 0);
+        disc.invertCounters();
         disc.showResults();
     }
 

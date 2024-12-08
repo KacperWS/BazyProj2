@@ -23,6 +23,7 @@ public class DiscIO {
     private final int pageSizeBytes;
     private int records;
     private int recToGenerate = 10000 * recordSize;
+    private boolean show = true;
 
     public DiscIO(String filename, int pageSize) {
         this.filename = filename;
@@ -119,6 +120,10 @@ public class DiscIO {
         }
     }
 
+    public void invertCounters() {
+        this.show = !show;
+    }
+
     public Record readRecord(long offset) throws IOException{
         openRAF2("Records.txt","r");
         byte[] buffer = new byte[Integer.BYTES * recordSize];
@@ -183,7 +188,8 @@ public class DiscIO {
             closeRAF(); //File ended
             return null; //Indicates that file ended
         }
-        readCounter++;
+        if(show)
+            readCounter++;
         closeRAF();
         temp.setNumber(pageNumber);
         return temp;
@@ -219,7 +225,8 @@ public class DiscIO {
         temp.flip();
         temp.get(binaryData);
         raf.write(binaryData);
-        writeCounter++;
+        if(show)
+            writeCounter++;
         closeRAF();
     }
 
