@@ -225,6 +225,40 @@ public class DiscIO {
             e.printStackTrace();
         }
     }
+    
+    public void saveSettings(int[] data) throws IOException {
+        filename = "Settings.txt";
+        openRAF("rw");
+        ByteBuffer temp = ByteBuffer.allocate(data.length * Integer.BYTES);
+        for(int value : data)
+            temp.putInt(value);
+        byte[] binaryData = new byte[data.length * Integer.BYTES];
+        temp.flip();
+        temp.get(binaryData);
+        raf.write(binaryData);
+        closeRAF();
+    }
+
+    public int[] readSettings() throws IOException {
+        String temp = filename;
+        filename = "Settings.txt";
+        openRAF("r");
+        int[] data = new int[10];
+        byte[] buffer = new byte[data.length * Integer.BYTES];
+        if (raf.read(buffer) != -1) {
+            ByteBuffer bufferme;
+            bufferme = ByteBuffer.wrap(buffer);
+            IntBuffer as = bufferme.asIntBuffer();
+            for (int i = 0; i < as.capacity(); i++)
+                data[i] = as.get(i);
+        }
+        else {
+            closeRAF();
+        }
+        closeRAF();
+        filename = temp;
+        return data;
+    }
 
     public void showOp() {
         System.out.println("Reads: " + read + " Writes: " + write);
