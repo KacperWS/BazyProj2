@@ -24,7 +24,6 @@ public class BTree {
         this.treeCapacity = treeCapacity;
         this.deletedRecords = new ArrayList<>();
         this.deletedPages = new ArrayList<>();
-        //this.tree = new ArrayList<>();
         this.path = new ArrayList<>();
         this.pathCopy = new ArrayList<>();
         Node root = new Node(treeCapacity);
@@ -33,7 +32,6 @@ public class BTree {
         root.setNumber(pageNumber);
         pageNumber++;
         disc = new DiscIO("page.txt", treeCapacity);
-        //tree.add(root);
     }
 
     public int getPageSize() {
@@ -76,7 +74,7 @@ public class BTree {
         path.clear();
         pathCopy.clear();
         root.getChildren().clear();
-        //current = root;
+        disc.showOp();
     }
 
     public void delete(int key) throws IOException {
@@ -141,6 +139,7 @@ public class BTree {
         path.clear();
         pathCopy.clear();
         root.getChildren().clear();
+        disc.showOp();
     }
 
     private void merge() throws IOException {
@@ -156,7 +155,6 @@ public class BTree {
         int index = parent.getChildren().indexOf(current);
         if(index < 1) { //merge with right
             Node siblingRight = loadPage(parent, parent.getPointers().get(1), 1);
-            //current.getValues().remove(delete);
             current.getValues().add(parent.getValues().get(index));
             current.getValues().addAll(siblingRight.getValues());
             current.getPointers().addAll(siblingRight.getPointers());
@@ -184,7 +182,6 @@ public class BTree {
 
             pathCopy.add(siblingLeft); pathCopy.add(parent);
 
-
             /*Node siblingRight;
             if(parent.getPointers().size() - 1 > index) {
                 siblingRight = disc.read(parent.getPointers().get(index + 1));//children.get(index + 1); //right sibling should exist
@@ -210,7 +207,6 @@ public class BTree {
 
     private Node loadPage(Node s, long pageNum, int index) throws IOException {
         Node child = s.getChildren().get(s.getPointers().indexOf(pageNum));
-        //System.out.println(s.getChildren().size());
         if(child == null) {
             Node childNode = disc.read(pageNum);
             s.getChildren().add(index, childNode);
@@ -242,44 +238,39 @@ public class BTree {
         return i;
     }
 
-    public Element search(int key, Node s, boolean dfs) throws IOException {
-        // Start from the root node
+    private Element search(int key, Node s, boolean dfs) throws IOException {
 
-        // Base case: If the node is empty, return null
         if (s.getValues().isEmpty()) {
             return null;
         }
 
-        // Find the index of the key in the current node
         int x = find(key, s);
 
-        // If the key is found in the current node, return it
         if(x < (s.getValues().size())) {
             if (s.getValues().get(x).getKey() == key) {
-                //current = null;  // Reset current node, if necessary
                 return s.getValues().get(x);
             }
         }
 
-        // If the key is not found and we have children, we need to search the correct child node
         if (!s.getPointers().isEmpty()) {
-            // Add current node to path
             fillNode(s);
-            /*if(x >= s.getPointers().size()) {
-                current = null; //Value dont exist
-                return null;
-            }*/
             Node childNode = loadPage(s, s.getPointers().get(x), x);
             path.add(childNode);
-            current = childNode;// Get the child node based on the index
-            return search(key, childNode, dfs); // Recursively search in the child node
+            current = childNode;
+            return search(key, childNode, dfs);
         }
 
-        // If we reached a leaf node and the key is not found, return null
         if(dfs)
             return s.getValues().getLast();
         else
             return null;
+    }
+
+    public Element search2 (int key) throws IOException {
+        current = root;
+        Element temp = search(key, root, false);
+        disc.showOp();
+        return temp;
     }
 
     private boolean compensateDel() throws IOException {
@@ -296,12 +287,9 @@ public class BTree {
             if(siblingRight.getValues().size() == treeCapacity )
                 return false; //sibling has exactly 'd' keys
 
-            //current.getValues().remove(delete);
             List<Element> temp = current.getValues();
             temp.add(parent.getValues().get(index));
             temp.addAll(siblingRight.getValues());
-            //temp.add(newOne); //create temp list with all
-            //temp.sort(Comparator.comparingInt(Element::getKey));
             int middleValue = (int) Math.round(temp.size()/2.0 - 1);
             Element middle = temp.get(middleValue); //choose middle
 
@@ -328,13 +316,9 @@ public class BTree {
             Node siblingLeft = loadPage(parent, parent.getPointers().get(index - 1), index - 1);
             if(!(siblingLeft.getValues().size() == treeCapacity)) {
                 //sibling has space
-                //Element newOne = new Element(key, offset);
                 List<Element> temp = siblingLeft.getValues();
                 temp.add(parent.getValues().get(index - 1));
-                //current.getValues().remove(delete);
                 temp.addAll(current.getValues());
-                //temp.add(newOne); //create temp list with all
-                //temp.sort(Comparator.comparingInt(Element::getKey));
                 int middleValue = (int) Math.round(temp.size()/2.0 - 1);
                 Element middle = temp.get(middleValue); //choose middle
 
@@ -368,14 +352,9 @@ public class BTree {
                 return false; //sibling is full
 
             //compensate with right
-            //Node siblingRight = children.get(1);
-            //Element newOne = new Element(key, offset);
-            //current.getValues().remove(delete);
             List<Element> temp = current.getValues();
             temp.add(parent.getValues().get(index));
             temp.addAll(siblingRight.getValues());
-            //temp.add(newOne); //create temp list with all
-            //temp.sort(Comparator.comparingInt(Element::getKey));
             int middleValue = (int) Math.round(temp.size()/2.0 - 1);
             Element middle = temp.get(middleValue); //choose middle
 
@@ -466,7 +445,6 @@ public class BTree {
                 return false; //sibling is full
 
             //compensate with right
-            //Node siblingRight = children.get(1);
             Element newOne = new Element(key, offset);
             List<Element> temp = siblingRight.getValues();
             temp.add(parent.getValues().get(index));
@@ -563,18 +541,45 @@ public class BTree {
     public void printTree(Node node, int level) throws IOException {
         if (node == null) return;
 
-        // Print current level and its values
-        System.out.println("Level " + level + ": " + node.toString());
-
-        // Recursively print the children if they exist
+        System.out.print("Level " + level + ": ");
+        for(Element key : node.getValues())
+            System.out.print(key.getKey() + " ");
+        System.out.println();
         for (long child : node.getPointers()) {
             printTree(disc.read(child), level + 1);
         }
     }
 
-    // To print the whole tree starting from root
+    public void printInOrder() throws IOException {
+        System.out.println("Keys ascending: ");
+        printInOrder(root);
+    }
+
+    // Helper method for in-order traversal
+    private void printInOrder(Node node) throws IOException {
+        int i = 0;
+        while (i < node.getValues().size()) {
+            // Traverse the left child (if any)
+            if (!node.getPointers().isEmpty()) {
+                printInOrder(disc.read(node.getPointers().get(i)));
+            }
+
+            // Print the current key
+            System.out.print(node.getValues().get(i).getKey() + " ");
+
+            // Move to the next key
+            i++;
+        }
+
+        // If the node is not a leaf, traverse the right child
+        if (!node.getPointers().isEmpty()) {
+            printInOrder(disc.read(node.getPointers().get(i)));
+        }
+    }
+
     public void display() throws IOException {
         disc.invertCounters();
+        System.out.println("Tree: ");
         printTree(root, 0);
         disc.invertCounters();
         disc.showResults();

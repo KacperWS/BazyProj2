@@ -22,13 +22,13 @@ public class RNG {
     }
 
     public int check() {
-        long find = test.iterator().next();
-        int counter = 0;
+        /*long find = test.iterator().next();
+        //int counter = 0;
         for(int i = 1; i < test.size(); i++){
             if(test.iterator().next() != find)
                 counter++;
             else break;
-        }
+        }*/
         return test.size();
     }
     public long value() {

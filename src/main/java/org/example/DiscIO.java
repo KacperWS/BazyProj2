@@ -15,6 +15,8 @@ public class DiscIO {
     private String filenameRecords = "records.txt";
     private int readCounter;
     private int writeCounter;
+    private int read;
+    private int write;
     private BufferedInputStream bis;
     private BufferedOutputStream bos;
     private RandomAccessFile raf;
@@ -32,6 +34,7 @@ public class DiscIO {
         String[] stringArray = filename.split("\\.");
         this.filenameNoext = stringArray[0];
         this.records = 0;
+        read = 0; write = 0;
     }
 
     public void setRecToGenerate(int recToGenerate) {
@@ -52,36 +55,10 @@ public class DiscIO {
         this.filenameNoext = stringArray[0];
     }
 
-    public void closeIN() throws IOException {
-        if (bis != null) {
-            bis.close();
-        }
-    }
-
-    public void closeOUT() throws IOException {
-        if (bos != null) {
-            bos.close();
-        }
-    }
-
     public void closeRAF() throws IOException {
         if (raf != null) {
             raf.close();
         }
-    }
-
-    public void closeALL() throws IOException {
-        closeIN();
-        closeOUT();
-        closeRAF();
-    }
-
-    public void openIN() throws IOException {
-        this.bis = new BufferedInputStream(new FileInputStream(filename));
-    }
-
-    public void openOUT(String Filename, boolean mode) throws IOException {
-        this.bos = new BufferedOutputStream(new FileOutputStream(Filename, mode));
     }
 
     public void openRAF(String op) throws FileNotFoundException {
@@ -90,34 +67,6 @@ public class DiscIO {
 
     public void openRAF2(String filename, String op) throws FileNotFoundException {
         this.raf = new RandomAccessFile(filename, op);
-    }
-
-    public void createDataset() {
-        String fileName = "ter.txt";
-        deleteFile();
-        byte[] binaryData = new byte[4 * this.recToGenerate];
-        Random rand = new Random();
-
-        ByteBuffer test = ByteBuffer.allocate(4 * this.recToGenerate);
-        for (int i = 0; i < binaryData.length / 4; i++) {
-            rand.nextInt();
-            int value = rand.nextInt(8);
-
-            test.putInt(value);
-        }
-        test.flip(); test.get(binaryData);
-
-        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fileName))) {
-            int chunkSize = 1024;
-            for (int i = 0; i < binaryData.length; i += chunkSize) {
-                int bytesToWrite = Math.min(chunkSize, binaryData.length - i);
-                bos.write(binaryData, i, bytesToWrite);
-            }
-
-            System.out.println("Binary data saved successfully in chunks to " + (4 * this.recToGenerate));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void invertCounters() {
@@ -190,6 +139,7 @@ public class DiscIO {
         }
         if(show)
             readCounter++;
+        read++;
         closeRAF();
         temp.setNumber(pageNumber);
         return temp;
@@ -227,6 +177,7 @@ public class DiscIO {
         raf.write(binaryData);
         if(show)
             writeCounter++;
+        write++;
         closeRAF();
     }
 
@@ -273,6 +224,11 @@ public class DiscIO {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void showOp() {
+        System.out.println("Reads: " + read + " Writes: " + write);
+        read =0; write = 0;
     }
 
     public void showResults(){
