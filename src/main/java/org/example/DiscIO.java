@@ -27,7 +27,7 @@ public class DiscIO {
     private int recToGenerate = 10000 * recordSize;
     private boolean show = true;
 
-    public DiscIO(String filename, int pageSize) {
+    public DiscIO(String filename, int pageSize) throws IOException {
         this.filename = filename;
         this.pageSize = pageSize;
         this.pageSizeBytes = pageSize * 2 * Integer.BYTES + pageSize * 2 * Long.BYTES + (pageSize * 2 + 1) * Long.BYTES;
@@ -226,33 +226,34 @@ public class DiscIO {
         }
     }
     
-    public void saveSettings(int[] data) throws IOException {
+    public void saveSettings(long[] data) throws IOException {
         filename = "Settings.txt";
         openRAF("rw");
-        ByteBuffer temp = ByteBuffer.allocate(data.length * Integer.BYTES);
-        for(int value : data)
-            temp.putInt(value);
-        byte[] binaryData = new byte[data.length * Integer.BYTES];
+        ByteBuffer temp = ByteBuffer.allocate(data.length * Long.BYTES);
+        for(long value : data)
+            temp.putLong(value);
+        byte[] binaryData = new byte[data.length * Long.BYTES];
         temp.flip();
         temp.get(binaryData);
         raf.write(binaryData);
         closeRAF();
     }
 
-    public int[] readSettings() throws IOException {
+    public long[] readSettings() throws IOException {
         String temp = filename;
         filename = "Settings.txt";
         openRAF("r");
-        int[] data = new int[10];
-        byte[] buffer = new byte[data.length * Integer.BYTES];
+        long[] data = new long[3];
+        byte[] buffer = new byte[data.length * Long.BYTES];
         if (raf.read(buffer) != -1) {
             ByteBuffer bufferme;
             bufferme = ByteBuffer.wrap(buffer);
-            IntBuffer as = bufferme.asIntBuffer();
+            LongBuffer as = bufferme.asLongBuffer();
             for (int i = 0; i < as.capacity(); i++)
                 data[i] = as.get(i);
         }
         else {
+            filename = temp;
             closeRAF();
         }
         closeRAF();

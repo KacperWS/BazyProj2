@@ -1,5 +1,6 @@
 package org.example;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -10,8 +11,8 @@ public class BTree {
     private Node root;
     private final List<Node> path;
     private final List<Node> pathCopy;
-    private final List<Integer> deletedPages;
-    private final List<Long> deletedRecords;
+    private List<Integer> deletedPages;
+    private List<Long> deletedRecords;
     private final int pageSize;
     private final int treeCapacity; //d value
     private Node current;
@@ -19,19 +20,26 @@ public class BTree {
     private int pageNumber = 0; //first free page number to use
     private long offset = 0;
 
-    public BTree(int treeCapacity) {
-        this.pageSize = treeCapacity * 4 + 1;
-        this.treeCapacity = treeCapacity;
-        this.deletedRecords = new ArrayList<>();
-        this.deletedPages = new ArrayList<>();
-        this.path = new ArrayList<>();
-        this.pathCopy = new ArrayList<>();
+    public BTree(int treeCapacity) throws IOException {
         Node root = new Node(treeCapacity);
         this.root = root;
         current = root;
+        this.pageSize = treeCapacity * 4 + 1;
+        this.treeCapacity = treeCapacity;
         root.setNumber(pageNumber);
-        pageNumber++;
+
         disc = new DiscIO("page.txt", treeCapacity);
+        String filePath = "Settings.txt";
+        File file = new File(filePath);
+        if(file.exists())
+            loadSettings();
+        else {
+            this.deletedRecords = new ArrayList<>();
+            this.deletedPages = new ArrayList<>();
+            pageNumber++;
+        }
+        this.path = new ArrayList<>();
+        this.pathCopy = new ArrayList<>();
     }
 
     public int getPageSize() {
@@ -215,6 +223,10 @@ public class BTree {
         }
         else
             return child;
+    }
+
+    private void loadRoot() throws IOException {
+        root = disc.read(0);
     }
 
     private void fillNode(Node node) {
@@ -587,5 +599,29 @@ public class BTree {
 
     public void deleteFile() {
         disc.deleteFile();
+    }
+
+    public void saveSettings() throws IOException {
+        long[] data = new long[]{pageNumber, offset, treeCapacity};
+        disc.saveSettings(data);
+    }
+
+    public void loadSettings() throws IOException {
+        long[] data;
+        data = disc.readSettings();
+        if(data[2] == treeCapacity) {
+            pageNumber = (int) data[0];
+            offset = data[1];
+            //disc.invertCounters();
+            loadRoot();
+            //disc.invertCounters();
+        }
+        //this.deletedRecords = new ArrayList<>();
+        //this.deletedPages = new ArrayList<>();
+        //Node root = new Node(treeCapacity);
+        //this.root = root;
+        //current = root;
+        //root.setNumber(pageNumber);
+        //pageNumber++;
     }
 }
