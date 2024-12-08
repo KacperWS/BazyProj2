@@ -26,7 +26,7 @@ public class Main {
 
         test = temp.search(26, temp.getRoot()); my = disc.readRecord(test.getOffset());
         System.out.println(my.toString());*/
-        for (int i = 4; i < 74; i+=4) {
+        /*for (int i = 4; i < 74; i+=4) {
             array[3]=i;
             temp.insert(i, array);
         }
@@ -54,7 +54,12 @@ public class Main {
         test = temp.search(6, temp.getRoot(), false); my = disc.readRecord(test.getOffset());
         System.out.println(my.toString());
 
-        temp.deleteFile();
+        temp.deleteFile();*/
         //System.out.print(Math.round(5/2.0));
+
+        RNG tester = new RNG(1000);
+        for (int j = 0; j < 100000; j++)
+            System.out.println(tester.random());
+        System.out.println("Random numbers = " + tester.check());
     }
 }
