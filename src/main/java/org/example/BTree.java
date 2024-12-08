@@ -416,10 +416,12 @@ public class BTree {
             siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
 
             if(!current.getPointers().isEmpty()){
-                current.getPointers().add(siblingRight.getPointers().getFirst());
-                //current.getChildren().add(siblingRight.getChildren().getFirst());
-                siblingRight.getPointers().removeFirst();
-                //siblingRight.getChildren().removeFirst();
+                while(current.getPointers().size() <= current.getValues().size()) {
+                    current.getPointers().add(siblingRight.getPointers().getFirst());
+                    //current.getChildren().add(siblingRight.getChildren().getFirst());
+                    siblingRight.getPointers().removeFirst();
+                    //siblingRight.getChildren().removeFirst();
+                }
             }
 
             pathCopy.add(siblingRight); pathCopy.add(current); pathCopy.add(parent);//nodes to resave

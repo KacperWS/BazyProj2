@@ -4,8 +4,8 @@ import java.io.IOException;
 
 public class Main {
     public static void main() throws IOException {
-        BTree temp = new BTree(1);
-        DiscIO disc = new DiscIO("Records.txt", 1);
+        BTree temp = new BTree(2);
+        DiscIO disc = new DiscIO("Records.txt", 2);
         int[] array = new int[]{7, 7, 7, 7, 7, 7};/* temp.insert(0, array); temp.insert(6, array);
         Element test = temp.search(6, temp.getRoot()); Record my = disc.readRecord(test.getOffset());
         System.out.println(my.toString());
@@ -40,7 +40,8 @@ public class Main {
         }
         temp.display();
         for (int i = 4; i < 65; i+=4) {
-            temp.delete(i);
+            temp.delete(i); System.out.println(" AAA" +i);
+            temp.display();
         }
         /*temp.delete(8);
         temp.delete(5);
