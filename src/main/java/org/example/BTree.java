@@ -27,7 +27,6 @@ public class BTree {
         this.pageSize = treeCapacity * 4 + 1;
         this.treeCapacity = treeCapacity;
         root.setNumber(pageNumber);
-
         disc = new DiscIO("page.txt", treeCapacity);
         String filePath = "Settings.txt";
         File file = new File(filePath);
@@ -76,8 +75,13 @@ public class BTree {
             if(!compensate(key, offset))
                 split(key, offset);
         }
-        disc.saveRecord(offset, key, record);
-        offset+= Integer.BYTES * 7;
+        if(!deletedRecords.isEmpty()){
+            disc.saveRecord(deletedRecords.getFirst(), key, record);
+            deletedRecords.removeFirst();
+        }else {
+            disc.saveRecord(offset, key, record);
+            offset+= Integer.BYTES * 7;
+        }
         savePage();
         path.clear();
         pathCopy.clear();
@@ -142,7 +146,8 @@ public class BTree {
                 //disc.saveRecord(temp.getOffset(), -1, new int[]{-1, -1, -1, -1, -1, -1});
             }
         }
-        disc.saveRecord(temp.getOffset(), -1, new int[]{-1, -1, -1, -1, -1, -1});
+        //disc.saveRecord(temp.getOffset(), -1, new int[]{-1, -1, -1, -1, -1, -1});
+        deletedRecords.add(temp.getOffset());
         savePage();
         path.clear();
         pathCopy.clear();
@@ -167,12 +172,13 @@ public class BTree {
             current.getValues().addAll(siblingRight.getValues());
             current.getPointers().addAll(siblingRight.getPointers());
 
-            siblingRight.getValues().clear();
+            //siblingRight.getValues().clear();
             parent.getValues().removeFirst();
             parent.getPointers().remove(1);
             parent.getChildren().remove(1);
 
             pathCopy.add(siblingRight); pathCopy.add(parent);//nodes to resave
+            deletedPages.add((int) siblingRight.getNumber());
         }
         else {
             Node siblingLeft = loadPage(parent, parent.getPointers().get(index - 1), index - 1);
@@ -183,13 +189,13 @@ public class BTree {
             current.getValues().addAll(0, siblingLeft.getValues());
             current.getPointers().addAll(0, siblingLeft.getPointers());
 
-            siblingLeft.getValues().clear();
+            //siblingLeft.getValues().clear();
             parent.getValues().remove(index - 1);
             parent.getPointers().remove(index - 1);
             parent.getChildren().remove(index - 1);
 
             pathCopy.add(siblingLeft); pathCopy.add(parent);
-
+            deletedPages.add((int) siblingLeft.getNumber());
             /*Node siblingRight;
             if(parent.getPointers().size() - 1 > index) {
                 siblingRight = disc.read(parent.getPointers().get(index + 1));//children.get(index + 1); //right sibling should exist
@@ -278,7 +284,7 @@ public class BTree {
             return null;
     }
 
-    public Element search2 (int key) throws IOException {
+    public Element search2(int key) throws IOException {
         current = root;
         Element temp = search(key, root, false);
         disc.showOp();
@@ -481,7 +487,11 @@ public class BTree {
             Node parent = path.get(path.indexOf(current) - 1);
             List<Node> children = parent.getChildren();
             Node newNode = new Node(treeCapacity);
-            newNode.setNumber(pageNumber++);
+            if(!deletedPages.isEmpty()) {
+                newNode.setNumber(deletedPages.getFirst());
+                deletedPages.removeFirst();
+            }else
+                newNode.setNumber(pageNumber++);
             if(!pathCopy.contains(current))
                 pathCopy.add(current);
             pathCopy.add(newNode); pathCopy.add(parent); //all nodes to resave
@@ -540,7 +550,11 @@ public class BTree {
                 Node temp = root;
                 Node newRoot = new Node(treeCapacity);
                 newRoot.setNumber(0);
-                root.setNumber(pageNumber++);
+                if(!deletedPages.isEmpty()){
+                    root.setNumber(deletedPages.getFirst());
+                    deletedPages.removeFirst();
+                }else
+                    root.setNumber(pageNumber++);
                 root = newRoot;
                 newRoot.getChildren().add(temp);
                 newRoot.getPointers().add(current.getNumber());
@@ -589,6 +603,32 @@ public class BTree {
         }
     }
 
+    public void printInOrderRec() throws IOException {
+        System.out.println("\nKeys ascending: ");
+        printInOrderRec(root);
+    }
+
+    private void printInOrderRec(Node node) throws IOException {
+        int i = 0;
+        while (i < node.getValues().size()) {
+            // Traverse the left child (if any)
+            if (!node.getPointers().isEmpty()) {
+                printInOrderRec(disc.read(node.getPointers().get(i)));
+            }
+
+            // Print the current key
+            System.out.print(node.getValues().get(i).getKey() + " " + disc.readRecord(node.getValues().get(i).getOffset()) + " ");
+
+            // Move to the next key
+            i++;
+        }
+
+        // If the node is not a leaf, traverse the right child
+        if (!node.getPointers().isEmpty()) {
+            printInOrderRec(disc.read(node.getPointers().get(i)));
+        }
+    }
+
     public void display() throws IOException {
         disc.invertCounters();
         System.out.println("Tree: ");
@@ -603,12 +643,12 @@ public class BTree {
 
     public void saveSettings() throws IOException {
         long[] data = new long[]{pageNumber, offset, treeCapacity};
-        disc.saveSettings(data);
+        disc.saveSettings(data, deletedPages, deletedRecords);
     }
 
     public void loadSettings() throws IOException {
         long[] data;
-        data = disc.readSettings();
+        data = disc.readSettings(this);
         if(data[2] == treeCapacity) {
             pageNumber = (int) data[0];
             offset = data[1];
@@ -623,5 +663,10 @@ public class BTree {
         //current = root;
         //root.setNumber(pageNumber);
         //pageNumber++;
+    }
+
+    public void loadSett(List<Integer> page, List<Long> rec) {
+        deletedPages = page;
+        deletedRecords = rec;
     }
 }

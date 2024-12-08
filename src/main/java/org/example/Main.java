@@ -24,6 +24,7 @@ public class Main {
         }
         temp.display();
         temp.printInOrder();
+        temp.printInOrderRec();
         temp.saveSettings();
         //temp.deleteFile();
 

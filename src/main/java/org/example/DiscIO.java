@@ -226,24 +226,32 @@ public class DiscIO {
         }
     }
     
-    public void saveSettings(long[] data) throws IOException {
+    public void saveSettings(long[] data, List<Integer> a, List<Long> b) throws IOException {
         filename = "Settings.txt";
         openRAF("rw");
-        ByteBuffer temp = ByteBuffer.allocate(data.length * Long.BYTES);
+        ByteBuffer temp = ByteBuffer.allocate(data.length * Long.BYTES + a.size() * Long.BYTES + b.size() * Long.BYTES + 2 * Long.BYTES);
+
         for(long value : data)
             temp.putLong(value);
-        byte[] binaryData = new byte[data.length * Long.BYTES];
+        temp.putLong(a.size());
+        temp.putLong(b.size());
+        for(int value : a) //page
+            temp.putLong(value);
+        for(long value : b) //record
+            temp.putLong(value);
+
+        byte[] binaryData = new byte[data.length * Long.BYTES + a.size() * Long.BYTES + b.size() * Long.BYTES + 2 * Long.BYTES];
         temp.flip();
         temp.get(binaryData);
         raf.write(binaryData);
         closeRAF();
     }
 
-    public long[] readSettings() throws IOException {
+    public long[] readSettings(BTree tree) throws IOException {
         String temp = filename;
         filename = "Settings.txt";
         openRAF("r");
-        long[] data = new long[3];
+        long[] data = new long[5];
         byte[] buffer = new byte[data.length * Long.BYTES];
         if (raf.read(buffer) != -1) {
             ByteBuffer bufferme;
@@ -251,6 +259,20 @@ public class DiscIO {
             LongBuffer as = bufferme.asLongBuffer();
             for (int i = 0; i < as.capacity(); i++)
                 data[i] = as.get(i);
+            buffer = new byte[(int) (data[3] * Long.BYTES + data[4] * Long.BYTES)];
+            raf.read(buffer);
+            List<Integer> page = new ArrayList<>();
+            List<Long> rec = new ArrayList<>();
+            bufferme = ByteBuffer.wrap(buffer);
+            LongBuffer buff = bufferme.asLongBuffer();
+            int i;
+            for(i = 0; i < data[3]; i++)
+                page.add((int) buff.get(i));
+
+            for(; i < data[4] + data[3]; i++)
+                rec.add(buff.get(i));
+
+            tree.loadSett(page, rec);
         }
         else {
             filename = temp;
