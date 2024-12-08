@@ -40,12 +40,12 @@ public class Main {
         }
         temp.display();
         for (int i = 4; i < 65; i+=4) {
-            temp.delete(i); System.out.println(" AAA" +i);
+            temp.delete(i); //System.out.println(" AAA" +i);
             temp.display();
         }
-        /*temp.delete(8);
+        temp.delete(8);
         temp.delete(5);
-        temp.delete(3);*/
+        temp.delete(3);
         temp.display();
         temp.deleteFile();
         //System.out.print(Math.round(5/2.0));

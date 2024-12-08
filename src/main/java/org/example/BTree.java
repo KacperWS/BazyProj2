@@ -102,6 +102,8 @@ public class BTree {
                         newRoot.setNumber(0);
                         root = newRoot;
                         break;
+                    } else if (current == root) {
+                        break;
                     }
                     if (!compensateDel()) {
                         merge();
