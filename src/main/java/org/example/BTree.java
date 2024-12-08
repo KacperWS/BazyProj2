@@ -72,8 +72,12 @@ public class BTree {
             current.getValues().sort(Comparator.comparingInt(Element::getKey));
         }
         else {
-            if(!compensate(key, offset))
-                split(key, offset);
+            Element newOne = new Element(key, offset);
+            current.getValues().add(newOne);
+            do {
+                if(!compensate(key, offset))
+                    split(key, offset);
+            }while (current.getValues().size() > 2 * treeCapacity);
         }
         if(!deletedRecords.isEmpty()){
             disc.saveRecord(deletedRecords.getFirst(), key, record);
@@ -412,11 +416,11 @@ public class BTree {
             if(siblingRight.getValues().size() == treeCapacity * 2)
                 return false; //sibling is full
 
-            Element newOne = new Element(key, offset);
+            //Element newOne = new Element(key, offset);
             List<Element> temp = siblingRight.getValues();
             temp.add(parent.getValues().get(index));
             temp.addAll(children.get(index).getValues());
-            temp.add(newOne); //create temp list with all
+            //temp.add(newOne); //create temp list with all
             temp.sort(Comparator.comparingInt(Element::getKey));
             int middleValue = (int) Math.round(temp.size()/2.0 - 1);
             Element middle = temp.get(middleValue); //choose middle
@@ -427,6 +431,16 @@ public class BTree {
             current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
             siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
+            if(!current.getPointers().isEmpty()){
+                while(siblingRight.getPointers().size() <= siblingRight.getValues().size()) {
+                    siblingRight.getPointers().addFirst(current.getPointers().getLast());
+                    //current.getChildren().add(siblingRight.getChildren().getFirst());
+                    current.getPointers().removeLast();
+                    //siblingRight.getChildren().removeFirst();
+                }
+            }
+
             pathCopy.add(siblingRight); pathCopy.add(current); pathCopy.add(parent);//nodes to resave
             return true;
         }
@@ -434,11 +448,11 @@ public class BTree {
             Node siblingLeft = loadPage(parent, parent.getPointers().get(index - 1), index - 1);
             if(!(siblingLeft.getValues().size() == treeCapacity * 2)) {
                 //sibling has space
-                Element newOne = new Element(key, offset);
+                //Element newOne = new Element(key, offset);
                 List<Element> temp = siblingLeft.getValues();
                 temp.add(parent.getValues().get(index - 1));
                 temp.addAll(children.get(index).getValues());
-                temp.add(newOne); //create temp list with all
+                //temp.add(newOne); //create temp list with all
                 temp.sort(Comparator.comparingInt(Element::getKey));
                 int middleValue = (int) Math.round(temp.size()/2.0 - 1);
                 Element middle = temp.get(middleValue); //choose middle
@@ -448,6 +462,16 @@ public class BTree {
                 siblingLeft.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
                 current.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
+                if(!current.getPointers().isEmpty()){
+                    while(siblingLeft.getPointers().size() <= siblingLeft.getValues().size()) {
+                        siblingLeft.getPointers().addLast(current.getPointers().getFirst());
+                        //current.getChildren().addFirst(siblingLeft.getChildren().getLast());
+                        current.getPointers().removeFirst();
+                        //siblingLeft.getChildren().removeLast();
+                    }
+                }
+
                 pathCopy.add(siblingLeft); pathCopy.add(current); pathCopy.add(parent);//nodes to resave
                 return true;
             }
@@ -463,11 +487,11 @@ public class BTree {
                 return false; //sibling is full
 
             //compensate with right
-            Element newOne = new Element(key, offset);
+            //Element newOne = new Element(key, offset);
             List<Element> temp = siblingRight.getValues();
             temp.add(parent.getValues().get(index));
             temp.addAll(children.get(index).getValues());
-            temp.add(newOne); //create temp list with all
+            //temp.add(newOne); //create temp list with all
             temp.sort(Comparator.comparingInt(Element::getKey));
             int middleValue = (int) Math.round(temp.size()/2.0 - 1);
             Element middle = temp.get(middleValue); //choose middle
@@ -477,13 +501,23 @@ public class BTree {
             current.setValues(new ArrayList<>(temp.subList(0, middleValue)));
 
             siblingRight.setValues(new ArrayList<>(temp.subList(middleValue + 1, temp.size())));
+
+            if(!current.getPointers().isEmpty()){
+                while(siblingRight.getPointers().size() <= siblingRight.getValues().size()) {
+                    siblingRight.getPointers().addFirst(current.getPointers().getLast());
+                    //current.getChildren().add(siblingRight.getChildren().getFirst());
+                    current.getPointers().removeLast();
+                    //siblingRight.getChildren().removeFirst();
+                }
+            }
+
             pathCopy.add(siblingRight); pathCopy.add(current); pathCopy.add(parent);//nodes to resave
             return true;
         }
     }
 
     private void split(int key, long offset) {
-        if(path.size() > 1) {
+        if(current != root) { //path.size > 1
             Node parent = path.get(path.indexOf(current) - 1);
             List<Node> children = parent.getChildren();
             Node newNode = new Node(treeCapacity);
@@ -496,9 +530,9 @@ public class BTree {
                 pathCopy.add(current);
             pathCopy.add(newNode); pathCopy.add(parent); //all nodes to resave
             if (current.getPointers().isEmpty()) { //Code below to add to leaf
-                Element newOne = new Element(key, offset);
+                //Element newOne = new Element(key, offset);
 
-                current.getValues().add(newOne);
+                //current.getValues().add(newOne);
                 current.getValues().sort(Comparator.comparingInt(Element::getKey));
 
                 int middleValue = (int) Math.round(current.getValues().size() / 2.0 - 1);
@@ -543,10 +577,10 @@ public class BTree {
             }
             path.remove(current);
             current = parent;
-            split(key, offset);
+            //split(key, offset);
         }
         else {
-            if(current.getValues().size() > treeCapacity * 2 || current.getChildren().isEmpty()){ //root too full or just created
+            //if(current.getValues().size() > treeCapacity * 2 || current.getChildren().isEmpty()){ //root too full or just created
                 Node temp = root;
                 Node newRoot = new Node(treeCapacity);
                 newRoot.setNumber(0);
@@ -560,7 +594,7 @@ public class BTree {
                 newRoot.getPointers().add(current.getNumber());
                 path.addFirst(root);
                 split(key, offset);
-            }
+            //}
         }
     }
 
