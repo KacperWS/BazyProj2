@@ -55,7 +55,7 @@ public class BTree {
     public void insert(int key, int[] record) throws IOException {
         current = root;
         path.add(root);
-        if(search(key, root) != null) {
+        if(search(key, root, false) != null) {
             path.clear();
             pathCopy.clear();
             return;
@@ -82,7 +82,7 @@ public class BTree {
     public void delete(int key) throws IOException {
         current = root;
         path.add(root);
-        Element temp = search(key, root);
+        Element temp = search(key, root, false);
         if(temp == null) {
             path.clear();
             pathCopy.clear();
@@ -114,7 +114,7 @@ public class BTree {
         }
         else { //Not leaf
             Node tempNode = current;
-            Element replace = searchDFS(key - 1, current);
+            Element replace = search(key - 1, current, true);
             tempNode.getValues().add(tempNode.getValues().indexOf(temp), replace); //Replacing key
             tempNode.getValues().remove(temp);
             current.getValues().remove(replace);
@@ -153,10 +153,7 @@ public class BTree {
         }*/
         int index = parent.getChildren().indexOf(current);
         if(index < 1) { //merge with right
-            Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
-            children.add(1, siblingRight);
-            children.remove(2);
-
+            Node siblingRight = loadPage(parent, parent.getPointers().get(1), 1);
             //current.getValues().remove(delete);
             current.getValues().add(parent.getValues().get(index));
             current.getValues().addAll(siblingRight.getValues());
@@ -170,8 +167,7 @@ public class BTree {
             pathCopy.add(siblingRight); pathCopy.add(parent);//nodes to resave
         }
         else {
-            Node siblingLeft = disc.read(parent.getPointers().get(index - 1));
-            //Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
+            Node siblingLeft = loadPage(parent, parent.getPointers().get(index - 1), index - 1);
             children.add(index - 1, siblingLeft);
             children.remove(index);
 
@@ -203,15 +199,24 @@ public class BTree {
     }
 
     public boolean updateRecord(int key, int[] data) throws IOException {
-        Element temp = search(key, root);
+        Element temp = search(key, root, false);
         if(temp ==null)
             return false;
         disc.saveRecord(temp.getOffset(), key, data);
         return true;
     }
 
-    private Node loadPage(long pageNum) throws IOException {
-        return disc.read(pageNum);
+    private Node loadPage(Node s, long pageNum, int index) throws IOException {
+        Node child = s.getChildren().get(s.getPointers().indexOf(pageNum));
+        //System.out.println(s.getChildren().size());
+        if(child == null) {
+            Node childNode = disc.read(pageNum);
+            s.getChildren().add(index, childNode);
+            s.getChildren().remove(index + 1);
+            return childNode;
+        }
+        else
+            return child;
     }
 
     private void fillNode(Node node) {
@@ -235,7 +240,7 @@ public class BTree {
         return i;
     }
 
-    public Element search(int key, Node s) throws IOException {
+    public Element search(int key, Node s, boolean dfs) throws IOException {
         // Start from the root node
 
         // Base case: If the node is empty, return null
@@ -262,53 +267,17 @@ public class BTree {
                 current = null; //Value dont exist
                 return null;
             }*/
-            Node childNode = disc.read(s.getPointers().get(x));//s.getChildren().get(x);
-            s.getChildren().add(x, childNode); s.getChildren().remove(x + 1);
+            Node childNode = loadPage(s, s.getPointers().get(x), x);
             path.add(childNode);
             current = childNode;// Get the child node based on the index
-            return search(key, childNode); // Recursively search in the child node
+            return search(key, childNode, dfs); // Recursively search in the child node
         }
 
         // If we reached a leaf node and the key is not found, return null
-        return null;
-    }
-
-    private Element searchDFS(int key, Node s) throws IOException {
-        // Start from the root node
-
-        // Base case: If the node is empty, return null
-        if (s.getValues().isEmpty()) {
+        if(dfs)
+            return s.getValues().getLast();
+        else
             return null;
-        }
-
-        // Find the index of the key in the current node
-        int x = find(key, s);
-
-        // If the key is found in the current node, return it
-        if(x < (s.getValues().size())) {
-            if (s.getValues().get(x).getKey() == key) {
-                //current = null;  // Reset current node, if necessary
-                return s.getValues().get(x);
-            }
-        }
-
-        // If the key is not found and we have children, we need to search the correct child node
-        if (!s.getPointers().isEmpty()) {
-            // Add current node to path
-            fillNode(s);
-            /*if(x >= s.getPointers().size()) {
-                current = null; //Value dont exist
-                return null;
-            }*/
-            Node childNode = disc.read(s.getPointers().get(x));//s.getChildren().get(x);
-            s.getChildren().add(x, childNode); s.getChildren().remove(x + 1);
-            path.add(childNode);
-            current = childNode;// Get the child node based on the index
-            return searchDFS(key, childNode); // Recursively search in the child node
-        }
-
-        // If we reached a leaf node and the key is not found, return null
-        return s.getValues().getLast();
     }
 
     private boolean compensateDel() throws IOException {
@@ -321,9 +290,7 @@ public class BTree {
             return false;
         int index = children.indexOf(current);
         if(index < 1) { //Right sibling should exist
-            Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
-            children.add(1, siblingRight);
-            children.remove(2);
+            Node siblingRight = loadPage(parent, parent.getPointers().get(1), 1);
             if(siblingRight.getValues().size() == treeCapacity )
                 return false; //sibling has exactly 'd' keys
 
@@ -356,10 +323,7 @@ public class BTree {
             return true;
         }
         else {
-            Node siblingLeft = disc.read(parent.getPointers().get(index - 1));
-            //Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
-            children.add(index - 1, siblingLeft);
-            children.remove(index);
+            Node siblingLeft = loadPage(parent, parent.getPointers().get(index - 1), index - 1);
             if(!(siblingLeft.getValues().size() == treeCapacity)) {
                 //sibling has space
                 //Element newOne = new Element(key, offset);
@@ -393,9 +357,7 @@ public class BTree {
 
             Node siblingRight;
             if(parent.getPointers().size() - 1 > index) {
-                siblingRight = disc.read(parent.getPointers().get(index + 1));//children.get(index + 1); //right sibling should exist
-                children.add(index + 1, siblingRight);
-                children.remove(index + 2);
+                siblingRight = loadPage(parent, parent.getPointers().get(index + 1), index + 1);
             }
             else
                 return false; //No siblings to match
@@ -447,9 +409,7 @@ public class BTree {
 
         int index = children.indexOf(current);
         if(index < 1){ //Right sibling should exist
-            Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
-            children.add(1, siblingRight);
-            children.remove(2);
+            Node siblingRight = loadPage(parent, parent.getPointers().get(1), 1);
             if(siblingRight.getValues().size() == treeCapacity * 2)
                 return false; //sibling is full
 
@@ -472,10 +432,7 @@ public class BTree {
             return true;
         }
         else {
-            Node siblingLeft = disc.read(parent.getPointers().get(index - 1));
-            //Node siblingRight = disc.read(parent.getPointers().get(1));//children.get(1);
-            children.add(index - 1, siblingLeft);
-            children.remove(index);
+            Node siblingLeft = loadPage(parent, parent.getPointers().get(index - 1), index - 1);
             if(!(siblingLeft.getValues().size() == treeCapacity * 2)) {
                 //sibling has space
                 Element newOne = new Element(key, offset);
@@ -498,9 +455,7 @@ public class BTree {
 
             Node siblingRight;
             if(parent.getPointers().size() - 1 > index) {
-                siblingRight = disc.read(parent.getPointers().get(index + 1));//children.get(index + 1); //right sibling should exist
-                children.add(index + 1, siblingRight);
-                children.remove(index + 2);
+                siblingRight = loadPage(parent, parent.getPointers().get(index + 1), index + 1);
             }
             else
                 return false; //No siblings to match

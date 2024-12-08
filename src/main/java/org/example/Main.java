@@ -41,12 +41,19 @@ public class Main {
         temp.display();
         for (int i = 4; i < 65; i+=4) {
             temp.delete(i); //System.out.println(" AAA" +i);
-            temp.display();
+            //temp.display();
         }
         temp.delete(8);
         temp.delete(5);
         temp.delete(3);
         temp.display();
+
+        Element test = temp.search(6, temp.getRoot(), false); Record my = disc.readRecord(test.getOffset());
+        System.out.println(my.toString());
+        temp.updateRecord(6, new int[]{0, 1, 2, 3, 3, 4});
+        test = temp.search(6, temp.getRoot(), false); my = disc.readRecord(test.getOffset());
+        System.out.println(my.toString());
+
         temp.deleteFile();
         //System.out.print(Math.round(5/2.0));
     }
