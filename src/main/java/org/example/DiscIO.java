@@ -207,9 +207,9 @@ public class DiscIO {
                 int number = byteBufferWrapper.getInt();
                 temp[i%7] = number;
                 if(i%7 == 0) {
-                    System.out.print(i / 7 + ". ");
                     if(i > 1)
                         System.out.println();
+                    System.out.print(i / 7 + ". ");
                 }
                 System.out.print(number + " ");
                 i++;

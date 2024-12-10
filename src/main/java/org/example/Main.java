@@ -2,8 +2,10 @@ package org.example;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.function.ToIntFunction;
 
 public class Main {
     public static void main(String args[]) throws IOException {
@@ -11,7 +13,8 @@ public class Main {
         int[] array = new int[]{7, 7, 7, 7, 7, 7};
         List<Integer> delete = new ArrayList<>();
         List<Integer> update = new ArrayList<>();
-        RNG tester = new RNG(10000);
+        int random = 10000;
+        RNG tester = new RNG(random);
         BTree tree = null;
 
         System.out.println("What can I do for you? (B-Tree)");
@@ -22,25 +25,28 @@ public class Main {
             String choice = scanner.nextLine();
             switch (choice) {
                 case "1": {
-                    System.out.println("Specify the set Insert Delete Update (Not all operation might be excutable):");
+                    System.out.println("Specify the set Insert Delete Update (Not all operation might be excutable, give 0 is none operation to do):");
                     choice = scanner.nextLine();
                     String[] stringArray = choice.split(" ");
 
                     array[3] = 2; array[2] = 2 + 3 * 4;
                     for(int j = 0; j < Integer.parseInt(stringArray[0]); j++){
                         assert tree != null;
-                        tree.insert((int) tester.random(), array);
+                        long val = tester.random();  delete.add((int) val); update.add((int) val);
+                        tree.insert((int) val, array);
                     }
-
+                    delete.sort(Comparator.comparingInt(Integer::intValue)); update.sort(Comparator.comparingInt(Integer::intValue));
                     array[1] = 2; array[3] = 2 + 3 * 4;
                     for(int j = 0; j < Integer.parseInt(stringArray[1]); j++){
                         assert tree != null;
-                        tree.delete((int)tester.value());
+                        tree.delete(delete.getFirst());
+                        delete.removeFirst();
                     }
 
                     for(int j = 0; j < Integer.parseInt(stringArray[2]); j++){
                         assert tree != null;
-                        tree.updateRecord((int)tester.value(), array);
+                        tree.updateRecord(update.getFirst(), array);
+                        update.removeFirst();
                     }
 
                     break;
@@ -123,7 +129,7 @@ public class Main {
                 }
 
                 case "4": {
-                    System.out.println("1. Tree 2. Show rec 3. Change seed 4.Quit");
+                    System.out.println("1. Tree 2. Show rec 3. Change seed 4. Clear operation numbers 5.Quit");
                     //System.out.println("Show all: " + Boolean.toString(!variables[0]) + " Show nothing: " + Boolean.toString(!variables[1]));
                     choice = scanner.nextLine(); int ch = Integer.parseInt(choice);
                     if(ch==1) {
@@ -133,9 +139,13 @@ public class Main {
                     else if (ch==2) {
                         assert tree != null;
                         tree.show();
-                    }else if(ch==2) {
+                    }else if(ch==3) {
                         choice = scanner.nextLine();
                         tester.changeSeed(Integer.parseInt(choice));
+                        random = Integer.parseInt(choice);
+                    }else if(ch==4){
+                        assert tree != null;
+                        tree.clear();
                     }
 
                     break;

@@ -8,7 +8,7 @@ public class RNG {
     private final long c = (long) (Math.exp(1) * 10000);
     private long x0;
     private long x;
-    private Set<Long> test;
+    private final Set<Long> test;
 
     public RNG(long seed) {
         this.x0 = seed;
@@ -24,8 +24,13 @@ public class RNG {
     public int check() {
         return test.size();
     }
+
     public long value() {
         return test.iterator().next();
+    }
+
+    public long getX() {
+        return x;
     }
 
     public void changeSeed(long seed) {
