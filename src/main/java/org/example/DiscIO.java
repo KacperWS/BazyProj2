@@ -93,7 +93,9 @@ public class DiscIO {
             closeRAF(); //File ended
             return null; //Indicates that file ended
         }
-        //writeCounter++;
+        if(show)
+            readCounter++;
+        read++;
         closeRAF();
         return newRec;
     }
@@ -110,7 +112,9 @@ public class DiscIO {
         temp.flip();
         temp.get(buffer);
         raf.write(buffer);
-        //readCounter++;
+        if(show)
+            readCounter++;
+        read++;
         closeRAF();
     }
 
@@ -192,38 +196,29 @@ public class DiscIO {
     }
 
     public void showFile(){
+        String te = filename;
+        filename = "Records.txt";
         try (FileInputStream fis = new FileInputStream(filename)) {
             byte[] byteBuffer = new byte[4];
             int i = 0;
-            int[] temp = new int[6];
+            int[] temp = new int[7];
             while (fis.read(byteBuffer) != -1) {
                 ByteBuffer byteBufferWrapper = ByteBuffer.wrap(byteBuffer);
                 int number = byteBufferWrapper.getInt();
-                if(i%6 == 0 && i > 0){
-                    int x = temp[5];
-                    int suma = 0, xpower = x;
-                    suma += temp[0] + temp[1] * xpower;
-                    suma+= temp[2] * (xpower *= x);
-                    suma+= temp[3] * (xpower *= x);
-                    suma+= temp[4] * (xpower * x);
-                    System.out.println("Rekord = " + suma);
+                temp[i%7] = number;
+                if(i%7 == 0) {
+                    System.out.print(i / 7 + ". ");
+                    if(i > 1)
+                        System.out.println();
                 }
-                temp[i%6] = number;
-                if(i%6 == 0)
-                    System.out.print(i/6 + ". ");
                 System.out.print(number + " ");
                 i++;
             }
-            int x = temp[5];
-            int suma = 0, xpower = x;
-            suma += temp[0] + temp[1] * xpower;
-            suma+= temp[2] * (xpower *= x);
-            suma+= temp[3] * (xpower *= x);
-            suma+= temp[4] * (xpower * x);
-            System.out.println("Rekord = " + suma);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println();
+        filename = te;
     }
     
     public void saveSettings(long[] data, List<Integer> a, List<Long> b) throws IOException {
@@ -259,20 +254,22 @@ public class DiscIO {
             LongBuffer as = bufferme.asLongBuffer();
             for (int i = 0; i < as.capacity(); i++)
                 data[i] = as.get(i);
-            buffer = new byte[(int) (data[3] * Long.BYTES + data[4] * Long.BYTES)];
-            raf.read(buffer);
-            List<Integer> page = new ArrayList<>();
-            List<Long> rec = new ArrayList<>();
-            bufferme = ByteBuffer.wrap(buffer);
-            LongBuffer buff = bufferme.asLongBuffer();
-            int i;
-            for(i = 0; i < data[3]; i++)
-                page.add((int) buff.get(i));
+            if(data[2] == tree.getTreeCapacity()) {
+                buffer = new byte[(int) (data[3] * Long.BYTES + data[4] * Long.BYTES)];
+                raf.read(buffer);
+                List<Integer> page = new ArrayList<>();
+                List<Long> rec = new ArrayList<>();
+                bufferme = ByteBuffer.wrap(buffer);
+                LongBuffer buff = bufferme.asLongBuffer();
+                int i;
+                for (i = 0; i < data[3]; i++)
+                    page.add((int) buff.get(i));
 
-            for(; i < data[4] + data[3]; i++)
-                rec.add(buff.get(i));
+                for (; i < data[4] + data[3]; i++)
+                    rec.add(buff.get(i));
 
-            tree.loadSett(page, rec);
+                tree.loadSett(page, rec);
+            }
         }
         else {
             filename = temp;
@@ -286,6 +283,11 @@ public class DiscIO {
     public void showOp() {
         System.out.println("Reads: " + read + " Writes: " + write);
         read =0; write = 0;
+    }
+
+    public void clear() {
+        writeCounter = 0;
+        readCounter = 0;
     }
 
     public void showResults(){

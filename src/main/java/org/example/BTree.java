@@ -7,7 +7,6 @@ import java.util.Comparator;
 import java.util.List;
 
 public class BTree {
-    //private List<Node> tree;
     private Node root;
     private final List<Node> path;
     private final List<Node> pathCopy;
@@ -91,6 +90,7 @@ public class BTree {
         pathCopy.clear();
         root.getChildren().clear();
         disc.showOp();
+        System.out.println("Insert success");
     }
 
     public void delete(int key) throws IOException {
@@ -157,6 +157,7 @@ public class BTree {
         pathCopy.clear();
         root.getChildren().clear();
         disc.showOp();
+        System.out.println("Delete success");
     }
 
     private void merge() throws IOException {
@@ -220,6 +221,7 @@ public class BTree {
         if(temp ==null)
             return false;
         disc.saveRecord(temp.getOffset(), key, data);
+        disc.showOp();
         return true;
     }
 
@@ -404,7 +406,7 @@ public class BTree {
     private boolean compensate(int key, long offset) throws IOException {
         if(current == root)
             return false;
-        //Only possible in leaf
+        //
         Node parent = path.get(path.indexOf(current) - 1);
         List<Node> children = parent.getChildren();
         if (parent.getPointers().size() < 2)
@@ -615,23 +617,18 @@ public class BTree {
         printInOrder(root);
     }
 
-    // Helper method for in-order traversal
     private void printInOrder(Node node) throws IOException {
         int i = 0;
         while (i < node.getValues().size()) {
-            // Traverse the left child (if any)
             if (!node.getPointers().isEmpty()) {
                 printInOrder(disc.read(node.getPointers().get(i)));
             }
 
-            // Print the current key
             System.out.print(node.getValues().get(i).getKey() + " ");
 
-            // Move to the next key
             i++;
         }
 
-        // If the node is not a leaf, traverse the right child
         if (!node.getPointers().isEmpty()) {
             printInOrder(disc.read(node.getPointers().get(i)));
         }
@@ -645,19 +642,15 @@ public class BTree {
     private void printInOrderRec(Node node) throws IOException {
         int i = 0;
         while (i < node.getValues().size()) {
-            // Traverse the left child (if any)
             if (!node.getPointers().isEmpty()) {
                 printInOrderRec(disc.read(node.getPointers().get(i)));
             }
 
-            // Print the current key
             System.out.print(node.getValues().get(i).getKey() + " " + disc.readRecord(node.getValues().get(i).getOffset()) + " ");
 
-            // Move to the next key
             i++;
         }
 
-        // If the node is not a leaf, traverse the right child
         if (!node.getPointers().isEmpty()) {
             printInOrderRec(disc.read(node.getPointers().get(i)));
         }
@@ -668,6 +661,10 @@ public class BTree {
         System.out.println("Tree: ");
         printTree(root, 0);
         disc.invertCounters();
+        disc.showResults();
+    }
+
+    public void results() {
         disc.showResults();
     }
 
@@ -689,14 +686,19 @@ public class BTree {
             //disc.invertCounters();
             loadRoot();
             //disc.invertCounters();
+        }else {
+            this.deletedRecords = new ArrayList<>();
+            this.deletedPages = new ArrayList<>();
+            pageNumber++;
         }
-        //this.deletedRecords = new ArrayList<>();
-        //this.deletedPages = new ArrayList<>();
-        //Node root = new Node(treeCapacity);
-        //this.root = root;
-        //current = root;
-        //root.setNumber(pageNumber);
-        //pageNumber++;
+    }
+
+    public void clear() {
+        disc.clear();
+    }
+
+    public void show() {
+        disc.showFile();
     }
 
     public void loadSett(List<Integer> page, List<Long> rec) {
