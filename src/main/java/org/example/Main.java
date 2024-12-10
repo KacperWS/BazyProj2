@@ -31,7 +31,7 @@ public class Main {
 
                     array[3] = 2; array[2] = 2 + 3 * 4;
                     for(int j = 0; j < Integer.parseInt(stringArray[0]); j++){
-                        assert tree != null;
+                        assert tree != null; array[0]+=j;
                         long val = tester.random();  delete.add((int) val); update.add((int) val);
                         tree.insert((int) val, array);
                     }
